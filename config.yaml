@@ -1,0 +1,50 @@
+# Assets tracked by Market Pulse.
+# Tickers are Yahoo Finance symbols (used by the yfinance library).
+# kind: "price" -> analyzed with log returns
+#       "yield" -> analyzed with daily change in percentage points (rates are not prices)
+# region: used to group the report and to build the US -> China lead/lag table.
+
+lookback_days: 750          # history to download (calendar days), ~2 years of trading
+corr_windows: [60, 250]     # short and long correlation windows (trading days)
+rolling_window: 60          # window for rolling-correlation charts
+
+assets:
+  # --- Commodities ---
+  - {name: Gold,          ticker: "GC=F",      group: Commodities, region: Global, kind: price}
+  - {name: Silver,        ticker: "SI=F",      group: Commodities, region: Global, kind: price}
+  - {name: WTI Oil,       ticker: "CL=F",      group: Commodities, region: Global, kind: price}
+  - {name: Brent Oil,     ticker: "BZ=F",      group: Commodities, region: Global, kind: price}
+  - {name: Copper,        ticker: "HG=F",      group: Commodities, region: Global, kind: price}
+
+  # --- US equities ---
+  - {name: S&P 500,       ticker: "^GSPC",     group: US Stocks,   region: US,     kind: price}
+  - {name: Nasdaq,        ticker: "^IXIC",     group: US Stocks,   region: US,     kind: price}
+  - {name: Dow Jones,     ticker: "^DJI",      group: US Stocks,   region: US,     kind: price}
+  - {name: VIX,           ticker: "^VIX",      group: Volatility,   region: US,     kind: price}
+
+  # --- Chinese equities ---
+  - {name: Shanghai Comp, ticker: "000001.SS", group: China Stocks, region: China, kind: price}
+  - {name: CSI 300,       ticker: "000300.SS", group: China Stocks, region: China, kind: price}
+  - {name: Shenzhen Comp, ticker: "399001.SZ", group: China Stocks, region: China, kind: price}
+  - {name: Hang Seng,     ticker: "^HSI",      group: China Stocks, region: China, kind: price}
+
+  # --- Currencies (quoted as Yahoo shows them) ---
+  - {name: Dollar Index,  ticker: "DX-Y.NYB",  group: FX,          region: Global, kind: price}
+  - {name: EUR/USD,       ticker: "EURUSD=X",  group: FX,          region: Global, kind: price}
+  - {name: USD/CNY,       ticker: "CNY=X",     group: FX,          region: China,  kind: price}
+  - {name: USD/JPY,       ticker: "JPY=X",     group: FX,          region: Global, kind: price}
+
+  # --- Rates ---
+  - {name: US 10Y Yield,  ticker: "^TNX",      group: Rates,       region: US,     kind: yield}
+
+  # Want crypto later? Uncomment:
+  # - {name: Bitcoin, ticker: "BTC-USD", group: Crypto, region: Global, kind: price}
+
+# Pairs to plot as rolling correlations (use the "name" values above).
+key_pairs:
+  - [Gold, Dollar Index]
+  - [Gold, US 10Y Yield]
+  - [WTI Oil, S&P 500]
+  - [S&P 500, CSI 300]
+  - [CSI 300, USD/CNY]
+  - [Copper, CSI 300]
