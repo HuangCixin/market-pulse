@@ -6,11 +6,11 @@
 
 **English** · [中文](README.zh-CN.md)
 
-[![CI](https://github.com/OWNER/market-pulse/actions/workflows/ci.yml/badge.svg)](https://github.com/OWNER/market-pulse/actions/workflows/ci.yml)
+[![CI](https://github.com/HuangCixin/market-pulse/actions/workflows/ci.yml/badge.svg)](https://github.com/HuangCixin/market-pulse/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
 
-[**▶ Live demo**](https://OWNER.github.io/market-pulse/) (synthetic data)
+[**▶ Live demo**](https://HuangCixin.github.io/market-pulse/) (synthetic data)
 
 ![Market terrain](docs/images/terrain-en.png)
 
@@ -64,7 +64,7 @@ red = up 红涨), **Theme** (light / dark), and **Language** (English / 中文).
 Requires Python 3.10+.
 
 ```bash
-git clone https://github.com/OWNER/market-pulse.git
+git clone https://github.com/HuangCixin/market-pulse.git
 cd market-pulse
 python -m venv .venv
 source .venv/bin/activate          # Windows: .venv\Scripts\activate

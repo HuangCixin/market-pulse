@@ -6,11 +6,11 @@
 
 [English](README.md) · **中文**
 
-[![CI](https://github.com/OWNER/market-pulse/actions/workflows/ci.yml/badge.svg)](https://github.com/OWNER/market-pulse/actions/workflows/ci.yml)
+[![CI](https://github.com/HuangCixin/market-pulse/actions/workflows/ci.yml/badge.svg)](https://github.com/HuangCixin/market-pulse/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
 
-[**▶ 在线演示**](https://OWNER.github.io/market-pulse/)（模拟数据）
+[**▶ 在线演示**](https://HuangCixin.github.io/market-pulse/)（模拟数据）
 
 ![市场地形图](docs/images/terrain-zh.png)
 
@@ -61,7 +61,7 @@ Market Pulse 每天下载 **21 个市场**的价格，覆盖大宗商品、美�
 需要 Python 3.10 及以上版本。
 
 ```bash
-git clone https://github.com/OWNER/market-pulse.git
+git clone https://github.com/HuangCixin/market-pulse.git
 cd market-pulse
 python -m venv .venv
 source .venv/bin/activate          # Windows：.venv\Scripts\activate
