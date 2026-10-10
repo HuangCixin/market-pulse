@@ -47,9 +47,8 @@ def main() -> None:
     path = write_report(res, out_dir)
 
     print(f"\nMarket Pulse — {res['as_of']}")
-    from market.report import headlines
-    for h in headlines(res):
-        print(f"  • {h}")
+    for h in res["headlines"]:
+        print("  • " + h.replace("<b>", "").replace("</b>", ""))
     print(f"\nReport: {path}")
     if args.open:
         webbrowser.open(path.as_uri())

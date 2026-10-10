@@ -51,15 +51,16 @@ def load_cache() -> pd.DataFrame:
     return pd.read_csv(CACHE, index_col=0, parse_dates=True)
 
 
-def demo_prices(assets: list[dict], n_days: int = 520, seed: int = 7) -> pd.DataFrame:
+def demo_prices(assets: list[dict], n_days: int = 730, seed: int = 7) -> pd.DataFrame:
     """Synthetic but realistic-looking prices for offline testing (--demo).
 
     Uses a few latent factors (global risk, US dollar, China, energy) so the
     correlation structure looks like real markets, plus market holidays.
     """
     rng = np.random.default_rng(seed)
-    dates = pd.bdate_range(end=pd.Timestamp.today().normalize(), periods=n_days)
-    f = {k: rng.normal(0, 1, n_days) for k in ["risk", "usd", "china", "energy", "rates"]}
+    dates = pd.date_range(end=pd.Timestamp.today().normalize(), periods=n_days, freq="D")
+    weekend = dates.dayofweek >= 5
+    f = {k: rng.normal(0, 1, n_days) for k in ["risk", "usd", "china", "energy", "rates", "crypto"]}
     loadings = {
         "Gold": dict(usd=-0.5, rates=-0.3), "Silver": dict(usd=-0.5, rates=-0.2, risk=0.3),
         "WTI Oil": dict(energy=1.0, risk=0.3), "Brent Oil": dict(energy=1.0, risk=0.25),
@@ -70,13 +71,17 @@ def demo_prices(assets: list[dict], n_days: int = 520, seed: int = 7) -> pd.Data
         "Hang Seng": dict(china=0.7, risk=0.4), "Dollar Index": dict(usd=1.0),
         "EUR/USD": dict(usd=-0.9), "USD/CNY": dict(usd=0.4, china=-0.3),
         "USD/JPY": dict(usd=0.6, rates=0.4), "US 10Y Yield": dict(rates=1.0, risk=0.2),
+        "Bitcoin": dict(crypto=1.0, risk=0.4), "Ethereum": dict(crypto=1.0, risk=0.45),
+        "Solana": dict(crypto=0.9, risk=0.5),
     }
     vol = {"VIX": 0.06, "WTI Oil": 0.022, "Brent Oil": 0.02, "US 10Y Yield": 0.05,
-           "USD/CNY": 0.002, "EUR/USD": 0.004, "Dollar Index": 0.004, "USD/JPY": 0.006}
+           "USD/CNY": 0.002, "EUR/USD": 0.004, "Dollar Index": 0.004, "USD/JPY": 0.006,
+           "Bitcoin": 0.03, "Ethereum": 0.04, "Solana": 0.05}
     start = {"Gold": 2400, "Silver": 29, "WTI Oil": 75, "Brent Oil": 79, "Copper": 4.3,
              "S&P 500": 5500, "Nasdaq": 17500, "Dow Jones": 41000, "VIX": 16,
              "Shanghai Comp": 3000, "CSI 300": 3600, "Shenzhen Comp": 9500, "Hang Seng": 18000,
-             "Dollar Index": 103, "EUR/USD": 1.09, "USD/CNY": 7.15, "USD/JPY": 148, "US 10Y Yield": 4.2}
+             "Dollar Index": 103, "EUR/USD": 1.09, "USD/CNY": 7.15, "USD/JPY": 148, "US 10Y Yield": 4.2,
+             "Bitcoin": 95000, "Ethereum": 3500, "Solana": 180}
     cols = {}
     for a in assets:
         name = a["name"]
@@ -86,12 +91,18 @@ def demo_prices(assets: list[dict], n_days: int = 520, seed: int = 7) -> pd.Data
         z = (common + rng.normal(0, 0.6, n_days)) / scale
         s = vol.get(name, 0.012) * z + 0.0002
         p0 = start.get(name, 100.0)
-        if a.get("kind") == "yield":
+        if name == "VIX":  # volatility mean-reverts instead of trending
+            lv = np.zeros(n_days)
+            for t in range(1, n_days):
+                lv[t] = 0.95 * lv[t - 1] + s[t] * 1.2
+            series = p0 * np.exp(lv)
+        elif a.get("kind") == "yield":
             series = p0 + np.cumsum(s * 1.5)
         else:
             series = p0 * np.exp(np.cumsum(s))
         ser = pd.Series(series, index=dates)
-        holidays = rng.random(n_days) < (0.04 if a.get("region") == "China" else 0.015)
-        ser[holidays] = np.nan
+        if a.get("group") != "Crypto":  # traditional markets: closed weekends + holidays
+            holidays = rng.random(n_days) < (0.04 if a.get("region") == "China" else 0.015)
+            ser[weekend | holidays] = np.nan
         cols[name] = ser
     return pd.DataFrame(cols)

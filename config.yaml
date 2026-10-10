@@ -20,7 +20,7 @@ assets:
   - {name: S&P 500,       ticker: "^GSPC",     group: US Stocks,   region: US,     kind: price}
   - {name: Nasdaq,        ticker: "^IXIC",     group: US Stocks,   region: US,     kind: price}
   - {name: Dow Jones,     ticker: "^DJI",      group: US Stocks,   region: US,     kind: price}
-  - {name: VIX,           ticker: "^VIX",      group: Volatility,   region: US,     kind: price}
+  - {name: VIX,           ticker: "^VIX",      group: Rates & Vol, region: US,     kind: price}
 
   # --- Chinese equities ---
   - {name: Shanghai Comp, ticker: "000001.SS", group: China Stocks, region: China, kind: price}
@@ -35,10 +35,12 @@ assets:
   - {name: USD/JPY,       ticker: "JPY=X",     group: FX,          region: Global, kind: price}
 
   # --- Rates ---
-  - {name: US 10Y Yield,  ticker: "^TNX",      group: Rates,       region: US,     kind: yield}
+  - {name: US 10Y Yield,  ticker: "^TNX",      group: Rates & Vol, region: US,     kind: yield}
 
-  # Want crypto later? Uncomment:
-  # - {name: Bitcoin, ticker: "BTC-USD", group: Crypto, region: Global, kind: price}
+  # --- Crypto (trades 7 days a week) ---
+  - {name: Bitcoin,       ticker: "BTC-USD",   group: Crypto,      region: Global, kind: price}
+  - {name: Ethereum,      ticker: "ETH-USD",   group: Crypto,      region: Global, kind: price}
+  - {name: Solana,        ticker: "SOL-USD",   group: Crypto,      region: Global, kind: price}
 
 # Pairs to plot as rolling correlations (use the "name" values above).
 key_pairs:
@@ -48,3 +50,5 @@ key_pairs:
   - [S&P 500, CSI 300]
   - [CSI 300, USD/CNY]
   - [Copper, CSI 300]
+  - [Bitcoin, Nasdaq]
+  - [Bitcoin, Gold]
