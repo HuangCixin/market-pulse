@@ -24,9 +24,12 @@ performance, correlation shifts, US→China lead/lag), `performance.csv`.
 - `run_daily.py` — CLI.
 
 ## Page sections (template.html)
-1. **Market float (3D canvas)**: x/y = MDS of the long-window correlation (markets that move
-   together sit close); height = move in σ; above the surface = up. Links = |corr| ≥ 0.6
-   (solid = together, dashed = opposite). Drag/zoom/hover, date slider + Play.
+1. **Market terrain (3D canvas)**: a filled, shaded surface. Each market sits at x/y from MDS of the
+   long-window correlation (markets that move together are close). Height AND color = move in σ
+   (diverging scale centred at 0: teal up, light neutral near 0, orange/red down; swapped in the
+   red-up mode; color bar on the right, full color beyond ±3σ). The surface is a kernel blend that
+   passes through each market's exact σ and eases to 0 between markets. Dots mark markets; labels
+   and tooltips show σ and the actual % move. Drag/zoom/hover, date slider + Play, optional links.
 2. **Where the money moved**: diverging σ bars per group, synced to the float's date/period.
 3. **Trends**: line small multiples per group (1M/3M/6M/1Y). Yields are plotted separately in bp.
 4. **How markets move together**: relationship changes, US→China next-day table, rolling correlations,

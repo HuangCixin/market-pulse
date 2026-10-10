@@ -59,10 +59,19 @@ header{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:flex-end;justify-co
 .stage{position:relative;border:1px solid var(--line);border-radius:12px;background:var(--surface);overflow:hidden}
 #float{display:block;width:100%;height:560px;cursor:grab;touch-action:none}
 #float:active{cursor:grabbing}
-.stage .legend{position:absolute;left:12px;top:10px;font-size:12px;color:var(--ink-2);display:grid;gap:4px;pointer-events:none}
-.stage .legend span{display:inline-flex;align-items:center;gap:6px}
+.stage .legend{position:absolute;right:14px;top:12px;font-size:12px;color:var(--ink-2);display:grid;gap:14px;pointer-events:none;justify-items:end}
+.stage .legend .key{display:grid;gap:4px;justify-items:start}
+.stage .legend .key span{display:inline-flex;align-items:center;gap:6px}
+.cbar{display:grid;gap:6px;justify-items:start}
+.cbar-title{font-weight:600;color:var(--ink);font-size:12px}
+.cbar-body{position:relative;display:flex;gap:6px;height:190px}
+.cbar-grad{width:14px;height:100%;border-radius:3px;box-shadow:0 0 0 1px var(--line)}
+.cbar-ticks{position:relative;width:74px}
+.cbar-ticks span{position:absolute;left:0;transform:translateY(-50%);font-size:11px;color:var(--ink-2);white-space:nowrap;font-variant-numeric:tabular-nums}
+.cbar-note{font-size:10.5px;color:var(--ink-3);max-width:110px}
+@media (max-width:640px){.cbar-body{height:120px}.stage .legend .key{display:none}}
 .dot{width:10px;height:10px;border-radius:50%;display:inline-block}
-.stage .hint{position:absolute;right:12px;top:10px;font-size:12px;color:var(--ink-3);pointer-events:none;text-align:right}
+.stage .hint{position:absolute;left:12px;top:10px;font-size:12px;color:var(--ink-3);pointer-events:none;text-align:right}
 .timeline{display:flex;align-items:center;gap:12px;padding:10px 12px;border-top:1px solid var(--line)}
 .timeline input{flex:1;accent-color:var(--accent)}
 .timeline .date{font-variant-numeric:tabular-nums;font-weight:600;min-width:150px}
@@ -129,10 +138,11 @@ footer{margin-top:40px;color:var(--ink-3);font-size:12px}
 
 <ul class="headlines" id="headlines"></ul>
 
-<h2>Market float</h2>
-<p class="note">Each sphere is a market. <b>Height</b> = how strongly it moved, in σ (its move divided by its usual move,
-so gold, oil, FX and crypto are comparable). Above the surface = up, below = down. Markets that usually move together
-sit <b>close to each other</b>; lines join strongly linked pairs. Drag to rotate, scroll to zoom, hover for details.</p>
+<h2>Market terrain</h2>
+<p class="note">A terrain built from every market's move. <b>Height and color</b> = how strongly it moved in σ
+(its move divided by its usual move, so gold, FX and crypto are comparable): peaks went up, valleys went down. Markets that
+usually move together sit <b>close to each other</b>, so a whole region rising or sinking shows money moving between groups.
+Dots mark each market; labels show σ and the actual % move. Drag to rotate, scroll to zoom, hover a dot for details.</p>
 <div class="stage">
   <canvas id="float" aria-label="3D view of market moves"></canvas>
   <div class="legend" id="floatLegend"></div>
@@ -144,7 +154,7 @@ sit <b>close to each other</b>; lines join strongly linked pairs. Drag to rotate
   </div>
   <div class="timeline" style="border-top:0;padding-top:0">
     <div class="toggles">
-      <label><input type="checkbox" id="tLinks" checked> Links</label>
+      <label><input type="checkbox" id="tLinks"> Links</label>
       <label><input type="checkbox" id="tLabels" checked> All labels</label>
       <label><input type="checkbox" id="tSpin"> Auto-rotate</label>
     </div>
@@ -205,8 +215,7 @@ const upC = () => css(state.colors==="west" ? "--up" : "--down");
 const dnC = () => css(state.colors==="west" ? "--down" : "--up");
 function hex2rgb(h){h=h.replace("#","");return [0,2,4].map(i=>parseInt(h.slice(i,i+2),16));}
 function mix(a,b,t){const A=hex2rgb(a),B=hex2rgb(b);return `rgb(${A.map((v,i)=>Math.round(v+(B[i]-v)*t)).join(",")})`;}
-function moveColor(z){ if(z==null) return css("--flat"); const t=Math.min(Math.abs(z)/2,1)*0.85+0.15;
-  return mix(css("--flat"), z>=0?upC():dnC(), t); }
+
 const unit = n => byName[n].kind==="yield" ? "bp" : "%";
 function fmtMove(v,n){ if(v==null) return "–"; const u=unit(n); return (v>=0?"+":"−")+Math.abs(v).toFixed(u==="bp"?0:2)+u; }
 const fmtZ = z => z==null ? "closed" : (z>=0?"+":"−")+Math.abs(z).toFixed(1)+"σ";
@@ -230,102 +239,146 @@ function renderHeader(){
   $("#headlines").innerHTML = D.headlines.map(h=>`<li>${h}</li>`).join("");
 }
 
-// ---------- 3D float
+// ---------- 3D terrain (market float)
 const cv = $("#float"), ctx = cv.getContext("2d");
-const cam = {yaw:-0.6, pitch:0.42, zoom:1};
-const ZS = 0.32, ZMAX = 4;   // world units per sigma, clamp
-let hoverName = null, projected = [];
+const cam = {yaw:-0.6, pitch:0.55, zoom:1};
+const ZS = 0.34, ZMAX = 4;          // world height per sigma, clamp
+const E = 1.2, N = 56;              // half-extent of the terrain, grid resolution
+const KS = 0.19, K0 = 1.2;          // K0: pull toward sea level away from markets          // kernel width, pull toward sea level away from markets
+let hoverName = null, pins = [];
 const links = (()=>{ const n=D.corr.names, m=D.corr.short, out=[];
   for(let i=0;i<n.length;i++) for(let j=i+1;j<n.length;j++){ const v=m[i][j]; if(v!=null && Math.abs(v)>=0.6) out.push([n[i],n[j],v]); }
   return out; })();
 
+// Diverging scale on sigma, centred at 0. Stops are [sigma, light-mode hex, dark-mode hex].
+const POS = [[0.6,"#7fdcc4","#6fe0c6"],[1.5,"#22b894","#2cc9a3"],[3,"#007a68","#0aa88d"]];
+const NEG = [[0.6,"#f9b48a","#fbb58c"],[1.5,"#f0703a","#f57a42"],[3,"#c42a12","#e0391c"]];
+const NEUTRAL = ["#ebe8e1","#ece9e2"];
+function isDark(){ return getComputedStyle(document.documentElement).colorScheme.includes("dark"); }
+function sigmaRGB(z){
+  const d = isDark()?2:1, up = state.colors==="west";
+  const arm = (z>=0) === up ? POS : NEG;        // Chinese convention swaps the arms
+  const a = Math.min(Math.abs(z),3);
+  let prev=[0,NEUTRAL[d-1]];
+  for(const st of arm){ const c=st[d]; if(a<=st[0]){ const t=(a-prev[0])/(st[0]-prev[0]);
+      const A=hex2rgb(prev[1]),B=hex2rgb(c); return A.map((v,i)=>v+(B[i]-v)*t); } prev=[st[0],c]; }
+  return hex2rgb(prev[1]);
+}
+const rgbStr = (c,k=1) => `rgb(${c.map(v=>Math.max(0,Math.min(255,Math.round(v*k)))).join(",")})`;
+
 function project(x,y,z,W,H){
   const cy=Math.cos(cam.yaw), sy=Math.sin(cam.yaw), cp=Math.cos(cam.pitch), sp=Math.sin(cam.pitch);
-  let X = x*cy - y*sy, Y = x*sy + y*cy;           // yaw around vertical
-  let Zs = z*cp - Y*sp, depth = z*sp + Y*cp;      // pitch: tilt toward viewer
-  const f = Math.min(W,H)*0.42*cam.zoom, dist = 4.2, s = dist/(dist - depth*0.9);
-  return {sx: W/2 + X*f*s, sy: H*0.53 - Zs*f*s, s, depth};
+  const X = x*cy - y*sy, Y = x*sy + y*cy;
+  const Zs = z*cp - Y*sp, depth = z*sp + Y*cp;
+  const f = Math.min(W,H)*0.46*cam.zoom, dist = 4.2, s = dist/(dist - depth*0.9);
+  return {sx: W*0.45 + X*f*s, sy: H*0.56 - Zs*f*s, s, depth};
 }
 function resize(){ const r=cv.getBoundingClientRect(), dpr=devicePixelRatio||1;
   cv.width=r.width*dpr; cv.height=r.height*dpr; ctx.setTransform(dpr,0,0,dpr,0,0); drawFloat(); }
 
+// Height field: kernel-weighted blend of every open market's sigma, easing to 0 between markets.
+function heightField(){
+  const P=cur(), i=state.idx, pts=[];
+  for(const a of assets){ const p=D.positions[a.name], z=P[a.name].z[i];
+    if(p && z!=null) pts.push([p[0],p[1],Math.max(-ZMAX,Math.min(ZMAX,z))]); }
+  const g = new Float32Array((N+1)*(N+1)), k2 = 2*KS*KS;
+  for(let r=0;r<=N;r++) for(let c=0;c<=N;c++){
+    const x=-E+2*E*c/N, y=-E+2*E*r/N; let sw=K0, sz=0;
+    for(const [px,py,pz] of pts){ const d2=(x-px)**2+(y-py)**2; const w=Math.exp(-d2/k2)/(d2+0.003); sw+=w; sz+=w*pz; }  // passes (almost) exactly through each market
+    // fade to sea level at the rim so the terrain reads as one solid piece
+    const rim = Math.min(1, (E-Math.max(Math.abs(x),Math.abs(y)))/0.18);
+    g[r*(N+1)+c] = sz/sw * Math.max(0,rim);
+  }
+  return g;
+}
+function zAt(g,x,y){ const c=(x+E)/(2*E)*N, r=(y+E)/(2*E)*N, c0=Math.max(0,Math.min(N-1,Math.floor(c))), r0=Math.max(0,Math.min(N-1,Math.floor(r)));
+  const fc=c-c0, fr=r-r0, v=(rr,cc)=>g[rr*(N+1)+cc];
+  return (v(r0,c0)*(1-fc)+v(r0,c0+1)*fc)*(1-fr)+(v(r0+1,c0)*(1-fc)+v(r0+1,c0+1)*fc)*fr; }
+
 function drawFloat(){
   const W=cv.clientWidth, H=cv.clientHeight; ctx.clearRect(0,0,W,H);
-  const P = cur(), i = state.idx, pos = D.positions;
-  const ink=css("--ink"), ink2=css("--ink-2"), ink3=css("--ink-3"), grid=css("--grid"), line=css("--line");
-  // sea-level plane
-  const E=1.35, steps=6;
-  ctx.lineWidth=1; ctx.strokeStyle=grid;
-  for(let k=0;k<=steps;k++){ const t=-E+2*E*k/steps;
-    let a=project(t,-E,0,W,H), b=project(t,E,0,W,H); ctx.beginPath(); ctx.moveTo(a.sx,a.sy); ctx.lineTo(b.sx,b.sy); ctx.stroke();
-    a=project(-E,t,0,W,H); b=project(E,t,0,W,H); ctx.beginPath(); ctx.moveTo(a.sx,a.sy); ctx.lineTo(b.sx,b.sy); ctx.stroke(); }
-  ctx.strokeStyle=line; ctx.lineWidth=1.2; ctx.beginPath();
-  [[-E,-E],[E,-E],[E,E],[-E,E],[-E,-E]].forEach((c,k)=>{const p=project(c[0],c[1],0,W,H); k?ctx.lineTo(p.sx,p.sy):ctx.moveTo(p.sx,p.sy);}); ctx.stroke();
-  // sigma pole at whichever corner is currently furthest back
-  const pole = [[-E,-E],[E,-E],[E,E],[-E,E]].sort((a,b)=>project(a[0],a[1],0,W,H).depth-project(b[0],b[1],0,W,H).depth)[0]; const p0=project(pole[0],pole[1],-ZMAX*ZS,W,H), p1=project(pole[0],pole[1],ZMAX*ZS,W,H);
-  ctx.strokeStyle=line; ctx.beginPath(); ctx.moveTo(p0.sx,p0.sy); ctx.lineTo(p1.sx,p1.sy); ctx.stroke();
-  ctx.font="11px system-ui,sans-serif"; ctx.fillStyle=ink3; ctx.textAlign="right";
-  for(const z of [-3,-2,-1,0,1,2,3]){ const p=project(pole[0],pole[1],z*ZS,W,H);
-    ctx.beginPath(); ctx.moveTo(p.sx-3,p.sy); ctx.lineTo(p.sx+3,p.sy); ctx.stroke();
-    ctx.fillText((z>0?"+":z<0?"−":"")+Math.abs(z)+"σ", p.sx-6, p.sy+4); }
-  // group names on the surface, at each group's centroid
-  ctx.textAlign="center"; ctx.font="600 11px system-ui,sans-serif"; const gPlaced=[];
-  for(const g of groupsPresent){ const m=assets.filter(a=>a.group===g&&pos[a.name]); if(!m.length) continue;
-    const cx=m.reduce((s,a)=>s+pos[a.name][0],0)/m.length, cy=m.reduce((s,a)=>s+pos[a.name][1],0)/m.length;
-    const p=project(cx,cy,0,W,H), w=ctx.measureText(g.toUpperCase()).width, box={x:p.sx-w/2-4,y:p.sy+5,w:w+8,h:15};
-    if(gPlaced.some(b=>!(box.x>b.x+b.w||box.x+box.w<b.x||box.y>b.y+b.h||box.y+box.h<b.y))) continue; gPlaced.push(box);
-    ctx.fillStyle=ink3; ctx.globalAlpha=.75; ctx.fillText(g.toUpperCase(),p.sx,p.sy+16); ctx.globalAlpha=1; }
-  // nodes
-  projected = assets.filter(a=>pos[a.name]).map(a=>{
-    const z = P[a.name].z[i], zc = z==null?0:Math.max(-ZMAX,Math.min(ZMAX,z));
-    const [x,y]=pos[a.name]; return {a, z, v:P[a.name].v[i], base:project(x,y,0,W,H), top:project(x,y,zc*ZS,W,H)}; });
-  const at = Object.fromEntries(projected.map(n=>[n.a.name,n]));
-  // links
-  if($("#tLinks").checked){ ctx.lineWidth=1.3;
-    for(const [a,b,v] of links){ if(!at[a]||!at[b]) continue;
-      const hl = hoverName && (a===hoverName||b===hoverName);
-      if(hoverName && !hl) continue;
-      ctx.strokeStyle = v>0?css("--pos-link"):css("--neg-link"); ctx.setLineDash(v>0?[]:[5,4]);
-      ctx.globalAlpha = hl?1:.55; ctx.beginPath(); ctx.moveTo(at[a].top.sx,at[a].top.sy); ctx.lineTo(at[b].top.sx,at[b].top.sy); ctx.stroke(); }
+  const P=cur(), i=state.idx, pos=D.positions, g=heightField();
+  const ink=css("--ink"), ink2=css("--ink-2"), ink3=css("--ink-3"), line=css("--line");
+  const dark=isDark(), step=2*E/N;
+  // project every grid vertex once
+  const V = new Array((N+1)*(N+1));
+  for(let r=0;r<=N;r++) for(let c=0;c<=N;c++){ const k=r*(N+1)+c; V[k]=project(-E+step*c,-E+step*r,g[k]*ZS,W,H); }
+  // sigma pole at the back corner
+  const corners=[[-E,-E],[E,-E],[E,E],[-E,E]];
+  const pole=[...corners].sort((a,b)=>project(a[0],a[1],0,W,H).depth-project(b[0],b[1],0,W,H).depth)[0];
+  const p0=project(pole[0],pole[1],-3*ZS,W,H), p1=project(pole[0],pole[1],3*ZS,W,H);
+  const drawPole=()=>{ ctx.globalAlpha=.7; ctx.strokeStyle=ink3; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(p0.sx,p0.sy); ctx.lineTo(p1.sx,p1.sy); ctx.stroke();
+    ctx.font="11px system-ui,sans-serif"; ctx.textAlign="right"; ctx.lineJoin="round";
+    for(const z of [-3,-2,-1,0,1,2,3]){ const p=project(pole[0],pole[1],z*ZS,W,H);
+      ctx.strokeStyle=ink3; ctx.beginPath(); ctx.moveTo(p.sx-3,p.sy); ctx.lineTo(p.sx+3,p.sy); ctx.stroke();
+      const t=(z>0?"+":z<0?"−":"")+Math.abs(z)+"σ"; ctx.strokeStyle=dark?"rgba(26,26,25,.85)":"rgba(252,252,251,.9)"; ctx.lineWidth=3;
+      ctx.strokeText(t,p.sx-6,p.sy+4); ctx.fillStyle=ink2; ctx.fillText(t,p.sx-6,p.sy+4); ctx.lineWidth=1; } ctx.globalAlpha=1; };
+  // faces, back to front (painter's algorithm)
+  const L=[-0.45,-0.55,0.7], Ln=Math.hypot(...L), faces=[];
+  for(let r=0;r<N;r++) for(let c=0;c<N;c++){
+    const a=r*(N+1)+c, b=a+1, d=a+N+1, e=d+1;
+    faces.push([a,b,e,d,(V[a].depth+V[b].depth+V[d].depth+V[e].depth)/4,r,c]); }
+  faces.sort((p,q)=>p[4]-q[4]);
+  const meshEvery=4, meshCol = dark?"rgba(0,0,0,.28)":"rgba(0,0,0,.14)";
+  for(const [a,b,e,d,,r,c] of faces){
+    const zavg=(g[a]+g[b]+g[d]+g[e])/4;
+    // lambert shading from the world-space normal (subtle: 0.78..1.08)
+    const dzx=((g[b]-g[a])+(g[e]-g[d]))/2*ZS/step, dzy=((g[d]-g[a])+(g[e]-g[b]))/2*ZS/step;
+    const nx=-dzx, ny=-dzy, nz=1, nn=Math.hypot(nx,ny,nz);
+    const lam=Math.max(0,(nx*L[0]+ny*L[1]+nz*L[2])/(nn*Ln));
+    const fill=rgbStr(sigmaRGB(zavg), 0.78+0.30*lam);
+    ctx.beginPath(); ctx.moveTo(V[a].sx,V[a].sy); ctx.lineTo(V[b].sx,V[b].sy); ctx.lineTo(V[e].sx,V[e].sy); ctx.lineTo(V[d].sx,V[d].sy); ctx.closePath();
+    ctx.fillStyle=fill; ctx.fill(); ctx.strokeStyle=fill; ctx.lineWidth=0.7; ctx.stroke();   // hides hairline seams
+    // restrained mesh: every 4th grid line only
+    ctx.strokeStyle=meshCol; ctx.lineWidth=0.6;
+    if(r%meshEvery===0){ ctx.beginPath(); ctx.moveTo(V[a].sx,V[a].sy); ctx.lineTo(V[b].sx,V[b].sy); ctx.stroke(); }
+    if(c%meshEvery===0){ ctx.beginPath(); ctx.moveTo(V[a].sx,V[a].sy); ctx.lineTo(V[d].sx,V[d].sy); ctx.stroke(); }
+    if(r===N-1){ ctx.beginPath(); ctx.moveTo(V[d].sx,V[d].sy); ctx.lineTo(V[e].sx,V[e].sy); ctx.stroke(); }
+    if(c===N-1){ ctx.beginPath(); ctx.moveTo(V[b].sx,V[b].sy); ctx.lineTo(V[e].sx,V[e].sy); ctx.stroke(); }
+  }
+  drawPole();
+  // market pins sit on the terrain; text uses ink colors, never the scale color
+  pins = assets.filter(a=>pos[a.name]).map(a=>{ const [x,y]=pos[a.name], z=P[a.name].z[i];
+    return {a, z, v:P[a.name].v[i], at:project(x,y,zAt(g,x,y)*ZS,W,H)}; });
+  const byN=Object.fromEntries(pins.map(p=>[p.a.name,p]));
+  if($("#tLinks").checked){ ctx.lineWidth=1.4;
+    for(const [a,b,v] of links){ if(!byN[a]||!byN[b]) continue; const hl=hoverName&&(a===hoverName||b===hoverName); if(hoverName&&!hl) continue;
+      ctx.strokeStyle=dark?"rgba(240,239,236,.75)":"rgba(11,11,11,.6)"; ctx.setLineDash(v>0?[]:[5,4]); ctx.globalAlpha=hl?1:.7;
+      ctx.beginPath(); ctx.moveTo(byN[a].at.sx,byN[a].at.sy); ctx.lineTo(byN[b].at.sx,byN[b].at.sy); ctx.stroke(); }
     ctx.setLineDash([]); ctx.globalAlpha=1; }
-  // stems + shadows
-  for(const n of projected){ ctx.strokeStyle=n.z==null?line:moveColor(n.z); ctx.lineWidth=1.5; ctx.globalAlpha=.7;
-    ctx.beginPath(); ctx.moveTo(n.base.sx,n.base.sy); ctx.lineTo(n.top.sx,n.top.sy); ctx.stroke();
-    ctx.globalAlpha=.35; ctx.fillStyle=ink3; ctx.beginPath(); ctx.ellipse(n.base.sx,n.base.sy,3.5*n.base.s,1.6*n.base.s,0,0,7); ctx.fill(); ctx.globalAlpha=1; }
-  // spheres back to front
-  projected.sort((p,q)=>p.top.depth-q.top.depth);
-  for(const n of projected){
-    const r = (6 + Math.min(Math.abs(n.z||0),3)*2.2) * n.top.s; n.r=r;
-    if(n.z==null){ ctx.strokeStyle=ink3; ctx.lineWidth=1.5; ctx.setLineDash([2,2]); ctx.beginPath(); ctx.arc(n.top.sx,n.top.sy,r,0,7); ctx.stroke(); ctx.setLineDash([]); continue; }
-    const c = moveColor(n.z), g = ctx.createRadialGradient(n.top.sx-r*.35,n.top.sy-r*.4,r*.1,n.top.sx,n.top.sy,r);
-    g.addColorStop(0,"rgba(255,255,255,.85)"); g.addColorStop(.35,c); g.addColorStop(1,c);
-    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(n.top.sx,n.top.sy,r,0,7); ctx.fill();
-    ctx.strokeStyle=css("--surface"); ctx.lineWidth=n.a.name===hoverName?2.5:1.2; if(n.a.name===hoverName) ctx.strokeStyle=ink; ctx.stroke(); }
-  // labels (text in ink, never series color)
-  const all = $("#tLabels").checked, placed=[];
-  const order = [...projected].sort((p,q)=>Math.abs(q.z||0)-Math.abs(p.z||0));
-  ctx.textAlign="left";
-  for(const n of order){
-    if(!all && Math.abs(n.z||0)<1.2 && n.a.name!==hoverName) continue;
-    const txt=n.a.name, sub=n.z==null?"closed":fmtMove(n.v,n.a.name);
-    ctx.font="600 12px system-ui,sans-serif"; const w=Math.max(ctx.measureText(txt).width, 60);
-    const box={x:n.top.sx+n.r+4,y:n.top.sy-13,w,h:28};
-    if(n.a.name!==hoverName && placed.some(b=>!(box.x>b.x+b.w||box.x+box.w<b.x||box.y>b.y+b.h||box.y+box.h<b.y))) continue;
+  pins.sort((p,q)=>p.at.depth-q.at.depth);
+  for(const p of pins){ const hov=p.a.name===hoverName, r=(hov?5:3.5)*p.at.s;
+    ctx.beginPath(); ctx.arc(p.at.sx,p.at.sy,r,0,7);
+    if(p.z==null){ ctx.strokeStyle=ink; ctx.setLineDash([2,2]); ctx.lineWidth=1.3; ctx.stroke(); ctx.setLineDash([]); }
+    else { ctx.fillStyle=dark?"#f0efec":"#0b0b0b"; ctx.fill(); ctx.strokeStyle=dark?"#1a1a19":"#fcfcfb"; ctx.lineWidth=1.5; ctx.stroke(); } }
+  // labels with a halo so they stay readable on any terrain color
+  const all=$("#tLabels").checked, placed=[];
+  const order=[...pins].sort((p,q)=>(q.a.name===hoverName)-(p.a.name===hoverName)||Math.abs(q.z||0)-Math.abs(p.z||0));
+  ctx.textAlign="left"; ctx.lineJoin="round";
+  for(const p of order){
+    const hov=p.a.name===hoverName; if(!all && Math.abs(p.z||0)<1.2 && !hov) continue;
+    const name=p.a.name, sub=p.z==null?"closed":`${fmtZ(p.z)} · ${fmtMove(p.v,name)}`;
+    ctx.font="600 12px system-ui,sans-serif"; const w1=ctx.measureText(name).width;
+    ctx.font="11px system-ui,sans-serif"; const w=Math.max(w1, ctx.measureText(sub).width);
+    const hit=bx=>placed.some(b=>!(bx.x>b.x+b.w||bx.x+bx.w<b.x||bx.y>b.y+b.h||bx.y+bx.h<b.y));
+    const cands=[{x:p.at.sx+7,y:p.at.sy-25},{x:p.at.sx-7-w,y:p.at.sy-25},{x:p.at.sx-w/2,y:p.at.sy-36},{x:p.at.sx-w/2,y:p.at.sy+6}].map(c=>({...c,w,h:27}));
+    const box=hov?cands[0]:cands.find(c=>!hit(c)); if(!box) continue;
     placed.push(box);
-    ctx.fillStyle=ink; ctx.fillText(txt,box.x,n.top.sy-1);
-    ctx.font="11px system-ui,sans-serif"; ctx.fillStyle=ink2; ctx.fillText(sub,box.x,n.top.sy+12);
+    ctx.strokeStyle=dark?"rgba(26,26,25,.85)":"rgba(252,252,251,.9)"; ctx.lineWidth=3.5;
+    ctx.font="600 12px system-ui,sans-serif"; ctx.strokeText(name,box.x,box.y+12); ctx.fillStyle=ink; ctx.fillText(name,box.x,box.y+12);
+    ctx.font="11px system-ui,sans-serif"; ctx.strokeText(sub,box.x,box.y+25); ctx.fillStyle=ink2; ctx.fillText(sub,box.x,box.y+25);
   }
 }
 function floatHover(e){
   const r=cv.getBoundingClientRect(), x=e.clientX-r.left, y=e.clientY-r.top;
-  let best=null, bd=1e9; for(const n of projected){ const d=Math.hypot(n.top.sx-x,n.top.sy-y); if(d<(n.r||8)+6 && d<bd){bd=d;best=n;} }
-  const name = best?best.a.name:null;
+  let best=null, bd=14; for(const p of pins){ const d=Math.hypot(p.at.sx-x,p.at.sy-y); if(d<bd){bd=d;best=p;} }
+  const name=best?best.a.name:null;
   if(name!==hoverName){ hoverName=name; drawFloat(); }
   if(best){ const a=best.a, pf=D.performance[a.name]||{};
-    const linked = links.filter(l=>l[0]===a.name||l[1]===a.name).map(l=>`${l[0]===a.name?l[1]:l[0]} ${l[2]>0?"+":"−"}${Math.abs(l[2]).toFixed(2)}`);
+    const linked=links.filter(l=>l[0]===a.name||l[1]===a.name).map(l=>`${l[0]===a.name?l[1]:l[0]} ${l[2]>0?"+":"−"}${Math.abs(l[2]).toFixed(2)}`);
     showTip(`<div class="t">${a.name} <span style="color:var(--ink-3);font-weight:400">${a.group}</span></div>
+      <div class="r">Height (σ)<b>${fmtZ(best.z)}</b></div>
       <div class="r">Move (${PERIOD_WORD[state.period]})<b>${best.z==null?"closed":fmtMove(best.v,a.name)}</b></div>
-      <div class="r">Unusualness<b>${fmtZ(best.z)}</b></div>
       <div class="r">Last price<b>${fmtNum(pf.last)}</b></div>
       ${linked.length?`<div style="margin-top:4px;color:var(--ink-3)">Moves with: ${linked.slice(0,4).join(", ")}</div>`:""}`, e.clientX, e.clientY);
   } else hideTip();
@@ -333,19 +386,27 @@ function floatHover(e){
 let drag=null;
 cv.addEventListener("pointerdown",e=>{drag={x:e.clientX,y:e.clientY,yaw:cam.yaw,pitch:cam.pitch}; cv.setPointerCapture(e.pointerId); $("#tSpin").checked=false;});
 cv.addEventListener("pointermove",e=>{ if(drag){ cam.yaw=drag.yaw+(e.clientX-drag.x)*0.008;
-  cam.pitch=Math.max(-0.15,Math.min(1.35,drag.pitch+(e.clientY-drag.y)*0.006)); hideTip(); drawFloat(); } else floatHover(e); });
+  cam.pitch=Math.max(0.05,Math.min(1.35,drag.pitch+(e.clientY-drag.y)*0.006)); hideTip(); drawFloat(); } else floatHover(e); });
 cv.addEventListener("pointerup",()=>drag=null);
 cv.addEventListener("pointerleave",()=>{ if(!drag){hoverName=null; hideTip(); drawFloat();} });
 cv.addEventListener("wheel",e=>{ e.preventDefault(); cam.zoom=Math.max(0.6,Math.min(2.4,cam.zoom*Math.exp(-e.deltaY*0.0012))); drawFloat(); },{passive:false});
 function spin(){ if($("#tSpin").checked && !drag){ cam.yaw+=0.004; drawFloat(); } requestAnimationFrame(spin); }
 
+// colour bar (same scale as the terrain), plus the pin/link key
 function renderFloatLegend(){
-  $("#floatLegend").innerHTML = `<span><i class="dot" style="background:${upC()}"></i>Up (above the surface)</span>
-    <span><i class="dot" style="background:${dnC()}"></i>Down (below)</span>
-    <span><i class="dot" style="border:1.5px dashed var(--ink-3)"></i>Market closed</span>
-    <span><svg width="22" height="6"><line x1="0" y1="3" x2="22" y2="3" stroke="${css("--pos-link")}" stroke-width="2"/></svg>Move together (≥ 0.6)</span>
-    <span><svg width="22" height="6"><line x1="0" y1="3" x2="22" y2="3" stroke="${css("--neg-link")}" stroke-width="2" stroke-dasharray="5 4"/></svg>Move opposite</span>`;
+  const stops=[]; for(let z=3;z>=-3;z-=0.25) stops.push(`${rgbStr(sigmaRGB(z))} ${((3-z)/6*100).toFixed(1)}%`);
+  $("#floatLegend").innerHTML = `
+    <div class="cbar"><div class="cbar-title">Move (σ)</div>
+      <div class="cbar-body"><div class="cbar-grad" style="background:linear-gradient(to bottom,${stops.join(",")})"></div>
+      <div class="cbar-ticks">${[3,2,1,0,-1,-2,-3].map(z=>`<span style="top:${(3-z)/6*100}%">${z>0?"+":z<0?"−":""}${Math.abs(z)}${z===3?"σ ↑ up":z===-3?"σ ↓ down":""}</span>`).join("")}</div></div>
+      <div class="cbar-note">beyond ±3σ shown at full color</div></div>
+    <div class="key"><span><i class="dot" style="background:var(--ink)"></i>Market</span>
+      <span><i class="dot" style="border:1.5px dashed var(--ink)"></i>Closed</span>
+      <span><svg width="20" height="6"><line x1="0" y1="3" x2="20" y2="3" stroke="var(--ink-2)" stroke-width="1.5"/></svg>Move together</span>
+      <span><svg width="20" height="6"><line x1="0" y1="3" x2="20" y2="3" stroke="var(--ink-2)" stroke-width="1.5" stroke-dasharray="5 4"/></svg>Move opposite</span></div>`;
 }
+// flow-board bars share the terrain's color scale
+function moveColor(z){ return z==null ? css("--flat") : rgbStr(sigmaRGB(z)); }
 
 // timeline
 const slider=$("#slider"); slider.max=D.float.dates.length-1; slider.value=state.idx;

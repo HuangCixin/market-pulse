@@ -23,10 +23,11 @@ Or open the folder in Claude Code (`claude` in this directory) and ask:
 > Run today's market report and explain what happened.
 
 ## What's on the page
-1. **Market float (3D)**: every market is a sphere. Up today = floats above the surface, down = sinks
-   below; height is how unusual the move was (σ). Markets that usually move together sit close, and lines
-   join strongly linked pairs. Drag to rotate, scroll to zoom, hover for details, and press **Play**
-   to watch the last two months.
+1. **Market terrain (3D)**: a colorful landscape of the markets. Peaks (teal) went up, valleys
+   (orange/red) went down; height and color both show how unusual the move was (σ), with a color bar
+   for reference. Markets that usually move together sit close, so a whole region rising or sinking
+   shows money moving between groups. Drag to rotate, scroll to zoom, hover a dot for the % move,
+   and press **Play** to watch the last two months.
 2. **Where the money moved**: one card per market group, with bars showing who gained and who lost.
 3. **Trends**: line charts per group (1M / 3M / 6M / 1Y).
 4. **How markets move together**: relationships that changed, US → China next-day spillover,
