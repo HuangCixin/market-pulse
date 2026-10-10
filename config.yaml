@@ -2,6 +2,7 @@
 # Tickers are Yahoo Finance symbols (used by the yfinance library).
 # kind: "price" -> analyzed with log returns
 #       "yield" -> analyzed with daily change in percentage points (rates are not prices)
+# name_zh: Chinese display name (used when the page is switched to 中文).
 # region: used to group the report and to build the US -> China lead/lag table.
 
 lookback_days: 750          # history to download (calendar days), ~2 years of trading
@@ -10,37 +11,37 @@ rolling_window: 60          # window for rolling-correlation charts
 
 assets:
   # --- Commodities ---
-  - {name: Gold,          ticker: "GC=F",      group: Commodities, region: Global, kind: price}
-  - {name: Silver,        ticker: "SI=F",      group: Commodities, region: Global, kind: price}
-  - {name: WTI Oil,       ticker: "CL=F",      group: Commodities, region: Global, kind: price}
-  - {name: Brent Oil,     ticker: "BZ=F",      group: Commodities, region: Global, kind: price}
-  - {name: Copper,        ticker: "HG=F",      group: Commodities, region: Global, kind: price}
+  - {name: Gold,          ticker: "GC=F",      group: Commodities, region: Global, kind: price, name_zh: "黄金"}
+  - {name: Silver,        ticker: "SI=F",      group: Commodities, region: Global, kind: price, name_zh: "白银"}
+  - {name: WTI Oil,       ticker: "CL=F",      group: Commodities, region: Global, kind: price, name_zh: "WTI原油"}
+  - {name: Brent Oil,     ticker: "BZ=F",      group: Commodities, region: Global, kind: price, name_zh: "布伦特原油"}
+  - {name: Copper,        ticker: "HG=F",      group: Commodities, region: Global, kind: price, name_zh: "铜"}
 
   # --- US equities ---
-  - {name: S&P 500,       ticker: "^GSPC",     group: US Stocks,   region: US,     kind: price}
-  - {name: Nasdaq,        ticker: "^IXIC",     group: US Stocks,   region: US,     kind: price}
-  - {name: Dow Jones,     ticker: "^DJI",      group: US Stocks,   region: US,     kind: price}
-  - {name: VIX,           ticker: "^VIX",      group: Rates & Vol, region: US,     kind: price}
+  - {name: S&P 500,       ticker: "^GSPC",     group: US Stocks,   region: US,     kind: price, name_zh: "标普500"}
+  - {name: Nasdaq,        ticker: "^IXIC",     group: US Stocks,   region: US,     kind: price, name_zh: "纳斯达克"}
+  - {name: Dow Jones,     ticker: "^DJI",      group: US Stocks,   region: US,     kind: price, name_zh: "道琼斯"}
+  - {name: VIX,           ticker: "^VIX",      group: Rates & Vol, region: US,     kind: price, name_zh: "VIX恐慌指数"}
 
   # --- Chinese equities ---
-  - {name: Shanghai Comp, ticker: "000001.SS", group: China Stocks, region: China, kind: price}
-  - {name: CSI 300,       ticker: "000300.SS", group: China Stocks, region: China, kind: price}
-  - {name: Shenzhen Comp, ticker: "399001.SZ", group: China Stocks, region: China, kind: price}
-  - {name: Hang Seng,     ticker: "^HSI",      group: China Stocks, region: China, kind: price}
+  - {name: Shanghai Comp, ticker: "000001.SS", group: China Stocks, region: China, kind: price, name_zh: "上证指数"}
+  - {name: CSI 300,       ticker: "000300.SS", group: China Stocks, region: China, kind: price, name_zh: "沪深300"}
+  - {name: Shenzhen Comp, ticker: "399001.SZ", group: China Stocks, region: China, kind: price, name_zh: "深证成指"}
+  - {name: Hang Seng,     ticker: "^HSI",      group: China Stocks, region: China, kind: price, name_zh: "恒生指数"}
 
   # --- Currencies (quoted as Yahoo shows them) ---
-  - {name: Dollar Index,  ticker: "DX-Y.NYB",  group: FX,          region: Global, kind: price}
-  - {name: EUR/USD,       ticker: "EURUSD=X",  group: FX,          region: Global, kind: price}
-  - {name: USD/CNY,       ticker: "CNY=X",     group: FX,          region: China,  kind: price}
-  - {name: USD/JPY,       ticker: "JPY=X",     group: FX,          region: Global, kind: price}
+  - {name: Dollar Index,  ticker: "DX-Y.NYB",  group: FX,          region: Global, kind: price, name_zh: "美元指数"}
+  - {name: EUR/USD,       ticker: "EURUSD=X",  group: FX,          region: Global, kind: price, name_zh: "欧元/美元"}
+  - {name: USD/CNY,       ticker: "CNY=X",     group: FX,          region: China,  kind: price, name_zh: "美元/人民币"}
+  - {name: USD/JPY,       ticker: "JPY=X",     group: FX,          region: Global, kind: price, name_zh: "美元/日元"}
 
   # --- Rates ---
-  - {name: US 10Y Yield,  ticker: "^TNX",      group: Rates & Vol, region: US,     kind: yield}
+  - {name: US 10Y Yield,  ticker: "^TNX",      group: Rates & Vol, region: US,     kind: yield, name_zh: "美债10年期收益率"}
 
   # --- Crypto (trades 7 days a week) ---
-  - {name: Bitcoin,       ticker: "BTC-USD",   group: Crypto,      region: Global, kind: price}
-  - {name: Ethereum,      ticker: "ETH-USD",   group: Crypto,      region: Global, kind: price}
-  - {name: Solana,        ticker: "SOL-USD",   group: Crypto,      region: Global, kind: price}
+  - {name: Bitcoin,       ticker: "BTC-USD",   group: Crypto,      region: Global, kind: price, name_zh: "比特币"}
+  - {name: Ethereum,      ticker: "ETH-USD",   group: Crypto,      region: Global, kind: price, name_zh: "以太坊"}
+  - {name: Solana,        ticker: "SOL-USD",   group: Crypto,      region: Global, kind: price, name_zh: "Solana"}
 
 # Pairs to plot as rolling correlations (use the "name" values above).
 key_pairs:

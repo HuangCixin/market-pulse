@@ -35,7 +35,13 @@ performance, correlation shifts, US→China lead/lag), `performance.csv`.
 4. **How markets move together**: relationship changes, US→China next-day table, rolling correlations,
    and a collapsed correlation grid (the user prefers not to lead with heatmaps).
 5. **All markets** table.
-Controls: Period (day/week/month), Colors (green-up Western / red-up Chinese convention), Theme.
+Controls: Language (English / 中文), Period (day/week/month), Colors (green-up Western / red-up Chinese convention), Theme.
+
+## Bilingual rule (English / 中文)
+Every visible string exists in both languages. In template.html: add keys to BOTH `I18N.en` and `I18N.zh`,
+use `t("key")` for text, `NM(name)` for market names (from `name_zh` in config.yaml) and `GN(group)` for
+group names. Headlines: both branches of `headlines(res, lang)` in report.py. Docs come in pairs too:
+README.md / README.zh-CN.md, docs/METHODOLOGY.md / docs/METHODOLOGY.zh-CN.md.
 
 ## Methodology rules (keep these when changing the analysis)
 - Correlate **daily moves**, never price levels.
@@ -55,4 +61,6 @@ spillover. Present data, not investment advice.
 ## Conventions
 - Python 3.10+, pandas, numpy, yfinance, pyyaml. No plotting libraries; charts are drawn in template.html.
 - The page must stay a single self-contained file (no CDN), readable in light and dark mode, and usable on a phone.
-- Test changes with `python run_daily.py --demo --open` before running on live data.
+- Test changes with `pytest` and `python run_daily.py --demo --open` before running on live data.
+- CI (.github/workflows/ci.yml) runs the tests; pages.yml publishes the demo page to GitHub Pages.
+- Full methodology: docs/METHODOLOGY.md. Update it (both languages) when changing calculations.

@@ -251,8 +251,8 @@ def run_analysis(prices: pd.DataFrame, cfg: dict) -> dict:
     return {
         "as_of": frames["dates"][frames["main_idx"]],
         "data_end": frames["dates"][-1],
-        "assets": [{"name": a["name"], "group": groups[a["name"]], "region": regions[a["name"]],
-                    "kind": kinds[a["name"]], "ticker": a["ticker"]} for a in assets],
+        "assets": [{"name": a["name"], "name_zh": a.get("name_zh", a["name"]), "group": groups[a["name"]],
+                    "region": regions[a["name"]], "kind": kinds[a["name"]], "ticker": a["ticker"]} for a in assets],
         "positions": mds_positions(corr_l),
         "float": frames,
         "performance": performance(prices, kinds),

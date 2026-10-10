@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" id="html">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -100,6 +100,7 @@ summary{cursor:pointer;color:var(--ink-2);font-size:13px}
 .corrgrid td{text-align:center;padding:3px;font-size:11px;min-width:30px}
 .corrgrid th{font-size:11px;white-space:nowrap}
 .corrgrid thead th{writing-mode:vertical-rl;transform:rotate(180deg);text-align:left;height:96px}
+html[lang="zh-CN"] .corrgrid thead th{transform:none;text-align:right}
 .shift{display:grid;grid-template-columns:1fr auto;gap:2px 12px;font-size:13px}
 .shift .meta{color:var(--ink-3);font-size:12px}
 #tip{position:fixed;pointer-events:none;z-index:20;background:var(--surface);color:var(--ink);border:1px solid var(--line);
@@ -115,38 +116,41 @@ footer{margin-top:40px;color:var(--ink-3);font-size:12px}
 <main>
 <header>
   <div>
-    <h1>Market Pulse</h1>
+    <h1 data-i18n="title">Market Pulse</h1>
     <p class="sub" id="subtitle"></p>
   </div>
   <span class="pill" id="regime"></span>
 </header>
 
 <div class="bar" role="toolbar">
-  <span><span class="lbl">Period</span>
+  <span><span class="seg" id="langSeg" aria-label="Language / 语言">
+      <button data-v="en">English</button><button data-v="zh">中文</button>
+    </span></span>
+  <span><span class="lbl" data-i18n="period">Period</span>
     <span class="seg" id="periodSeg">
-      <button data-v="day" aria-pressed="true">Day</button><button data-v="week">Week</button><button data-v="month">Month</button>
+      <button data-v="day" aria-pressed="true" data-i18n="day">Day</button><button data-v="week" data-i18n="week">Week</button><button data-v="month" data-i18n="month">Month</button>
     </span></span>
-  <span><span class="lbl">Colors</span>
+  <span><span class="lbl" data-i18n="colors">Colors</span>
     <span class="seg" id="colorSeg">
-      <button data-v="west" aria-pressed="true">Green = up</button><button data-v="cn">Red = up 红涨</button>
+      <button data-v="west" aria-pressed="true" data-i18n="west">Green = up</button><button data-v="cn" data-i18n="cnColors">Red = up 红涨</button>
     </span></span>
-  <span><span class="lbl">Theme</span>
+  <span><span class="lbl" data-i18n="theme">Theme</span>
     <span class="seg" id="themeSeg">
-      <button data-v="auto" aria-pressed="true">Auto</button><button data-v="light">Light</button><button data-v="dark">Dark</button>
+      <button data-v="auto" aria-pressed="true" data-i18n="auto">Auto</button><button data-v="light" data-i18n="light">Light</button><button data-v="dark" data-i18n="dark">Dark</button>
     </span></span>
 </div>
 
 <ul class="headlines" id="headlines"></ul>
 
-<h2>Market terrain</h2>
-<p class="note">A terrain built from every market's move. <b>Height and color</b> = how strongly it moved in σ
+<h2 data-i18n="hTerrain">Market terrain</h2>
+<p class="note" data-i18n="noteTerrain">A terrain built from every market's move. <b>Height and color</b> = how strongly it moved in σ
 (its move divided by its usual move, so gold, FX and crypto are comparable): peaks went up, valleys went down. Markets that
 usually move together sit <b>close to each other</b>, so a whole region rising or sinking shows money moving between groups.
 Dots mark each market; labels show σ and the actual % move. Drag to rotate, scroll to zoom, hover a dot for details.</p>
 <div class="stage">
   <canvas id="float" aria-label="3D view of market moves"></canvas>
   <div class="legend" id="floatLegend"></div>
-  <div class="hint">drag · scroll · hover</div>
+  <div class="hint" data-i18n="hint">drag · scroll · hover</div>
   <div class="timeline">
     <button class="btn" id="play" aria-label="Play">▶ Play</button>
     <input type="range" id="slider" min="0" max="0" value="0" aria-label="Date">
@@ -154,20 +158,20 @@ Dots mark each market; labels show σ and the actual % move. Drag to rotate, scr
   </div>
   <div class="timeline" style="border-top:0;padding-top:0">
     <div class="toggles">
-      <label><input type="checkbox" id="tLinks"> Links</label>
-      <label><input type="checkbox" id="tLabels" checked> All labels</label>
-      <label><input type="checkbox" id="tSpin"> Auto-rotate</label>
+      <label><input type="checkbox" id="tLinks"> <span data-i18n="links">Links</span></label>
+      <label><input type="checkbox" id="tLabels" checked> <span data-i18n="allLabels">All labels</span></label>
+      <label><input type="checkbox" id="tSpin"> <span data-i18n="autoRotate">Auto-rotate</span></label>
     </div>
   </div>
 </div>
 
-<h2>Where the money moved</h2>
-<p class="note">Same date and period as the float. Bars show each market's move in σ; the number is the actual move
+<h2 data-i18n="hFlow">Where the money moved</h2>
+<p class="note" data-i18n="noteFlow">Same date and period as the terrain. Bars show each market's move in σ; the number is the actual move
 (% or bp for yields). Markets are sorted strongest to weakest inside each group.</p>
 <div class="flow" id="flow"></div>
 
-<h2>Trends</h2>
-<p class="note">Change since the start of the window. Yields are in basis points.</p>
+<h2 data-i18n="hTrends">Trends</h2>
+<p class="note" data-i18n="noteTrends">Change since the start of the window. Yields are in basis points.</p>
 <div class="bar" style="position:static;border:0;margin:0 0 8px;padding:0">
   <span class="seg" id="rangeSeg">
     <button data-v="30">1M</button><button data-v="91" aria-pressed="true">3M</button><button data-v="182">6M</button><button data-v="365">1Y</button>
@@ -175,28 +179,97 @@ Dots mark each market; labels show σ and the actual % move. Drag to rotate, scr
 </div>
 <div class="grid" id="trends"></div>
 
-<h2>How markets move together</h2>
-<p class="note">Correlation of daily moves: +1 always together, −1 always opposite, 0 unrelated.</p>
+<h2 data-i18n="hTogether">How markets move together</h2>
+<p class="note" data-i18n="noteTogether">Correlation of daily moves: +1 always together, −1 always opposite, 0 unrelated.</p>
 <div class="flow">
-  <div class="card"><h3>Relationships that changed <small id="shiftSub"></small></h3><div class="shift" id="shifts"></div></div>
-  <div class="card"><h3>US → China, next day <small>US move on day t vs China on day t+1</small></h3><div class="wrap" id="leadlag"></div></div>
+  <div class="card"><h3><span data-i18n="cShift">Relationships that changed</span> <small id="shiftSub"></small></h3><div class="shift" id="shifts"></div></div>
+  <div class="card"><h3><span data-i18n="cLead">US → China, next day</span> <small data-i18n="cLeadSub">US move on day t vs China on day t+1</small></h3><div class="wrap" id="leadlag"></div></div>
 </div>
 <div class="grid" id="rolling" style="margin-top:14px"></div>
-<details id="corrDetails"><summary>Show the full correlation grid</summary>
+<details id="corrDetails"><summary data-i18n="corrSummary">Show the full correlation grid</summary>
   <div class="bar" style="position:static;border:0;margin:8px 0;padding:0"><span class="seg" id="corrSeg"></span></div>
   <div class="wrap" id="corrgrid"></div>
 </details>
 
-<h2>All markets</h2>
+<h2 data-i18n="hAll">All markets</h2>
 <div class="wrap" id="perf"></div>
 
-<footer>Data: Yahoo Finance via yfinance (delayed, unofficial). σ uses each market's prior 60-day daily volatility.
+<footer data-i18n="footer">Data: Yahoo Finance via yfinance (delayed, unofficial). σ uses each market's prior 60-day daily volatility.
 "Where the money moved" reads prices, not actual fund flows. For research only, not investment advice.</footer>
 </main>
 <div id="tip"></div>
 
 <script>
 const D = /*__DATA__*/null;
+// ---------- language (English / 中文)
+const I18N = {
+ en:{title:"Market Pulse",period:"Period",day:"Day",week:"Week",month:"Month",colors:"Colors",west:"Green = up",cnColors:"Red = up 红涨",
+  theme:"Theme",auto:"Auto",light:"Light",dark:"Dark",hTerrain:"Market terrain",
+  noteTerrain:`A terrain built from every market's move. <b>Height and color</b> = how strongly it moved in σ
+   (its move divided by its usual move, so gold, FX and crypto are comparable): peaks went up, valleys went down. Markets that
+   usually move together sit <b>close to each other</b>, so a whole region rising or sinking shows money moving between groups.
+   Dots mark each market; labels show σ and the actual % move. The surface between dots is a smooth blend for readability;
+   only the dots are data. Drag to rotate, scroll to zoom, hover a dot for details.`,
+  hint:"drag · scroll · hover",links:"Links",allLabels:"All labels",autoRotate:"Auto-rotate",
+  hFlow:"Where the money moved",noteFlow:`Same date and period as the terrain. Bars show each market's move in σ; the number is the actual move
+   (% or bp for yields). Markets are sorted strongest to weakest inside each group.`,
+  hTrends:"Trends",noteTrends:"Change since the start of the window. Yields are in basis points.",
+  hTogether:"How markets move together",noteTogether:"Correlation of daily moves: +1 always together, −1 always opposite, 0 unrelated.",
+  cShift:"Relationships that changed",cLead:"US → China, next day",cLeadSub:"US move on day t vs China on day t+1",
+  corrSummary:"Show the full correlation grid",hAll:"All markets",
+  footer:`Data: Yahoo Finance via yfinance (delayed, unofficial). σ uses each market's prior 60-day daily volatility.
+   "Where the money moved" reads prices, not actual fund flows. For research only, not investment advice.`,
+  asOf:"As of",latestP:p=>`Latest ${p}`,marketsAcross:(m,g)=>`${m} markets across ${g} groups`,latest:"Latest",
+  regimeTitle:"stocks & crypto vs havens (gold, VIX, yen), in σ","Risk-on":"Risk-on","Risk-off":"Risk-off",Mixed:"Mixed",
+  play:"▶ Play",pause:"❚❚ Pause",closed:"closed",heightS:"Height (σ)",move:"Move",lastPrice:"Last price",movesWith:"Moves with",
+  unusual:"Unusualness",cbarTitle:"Move (σ)",up:"up",down:"down",cbarNote:"beyond ±3σ shown at full color",
+  kMarket:"Market",kClosed:"Closed",kTogether:"Move together",kOpposite:"Move opposite",
+  avg:"avg",inflow:"inflow ↑",outflow:"outflow ↓",flat:"flat",pctChange:"% change",bp:"bp",
+  Volatility:"Volatility",noData:"No data",notEnough:"Not enough data.",
+  flipped:"flipped direction",tighter:"tighter than usual",looser:"looser than usual",vs:"vs",dSuffix:"d",
+  usYesterday:"US (yesterday)",corrRolling:n=>`${n}-day correlation`,now:"now",days:n=>`${n} days`,
+  thMarket:"Market",thLast:"Last",thAsOf:"As of",
+  period_day:"day",period_week:"week",period_month:"month"},
+ zh:{title:"市场脉搏 <span style=\"font-weight:400;color:var(--ink-3);font-size:15px\">Market Pulse</span>",period:"周期",day:"日",week:"周",month:"月",colors:"配色",west:"绿涨红跌",cnColors:"红涨绿跌",
+  theme:"主题",auto:"自动",light:"浅色",dark:"深色",hTerrain:"市场地形图",
+  noteTerrain:`由所有市场的涨跌构成的地形。<b>高度和颜色</b> = 波动强度（σ，即本次涨跌除以该市场的正常波动，
+   因此黄金、外汇和加密货币可以直接比较）：山峰表示上涨，山谷表示下跌。通常同涨同跌的市场<b>彼此靠近</b>，
+   所以整片区域上升或下沉，代表资金在不同市场之间流动。圆点代表各个市场，标签显示 σ 和实际涨跌幅。
+   圆点之间的曲面只是为了便于阅读而做的平滑过渡，只有圆点是真实数据。拖动旋转，滚轮缩放，悬停圆点查看详情。`,
+  hint:"拖动 · 缩放 · 悬停",links:"关联线",allLabels:"全部标签",autoRotate:"自动旋转",
+  hFlow:"资金流向",noteFlow:`与地形图使用相同的日期和周期。条形表示各市场的 σ 波动，数字为实际涨跌幅
+   （收益率用基点 bp）。每组内按从强到弱排序。`,
+  hTrends:"走势",noteTrends:"相对于所选区间起点的变化。收益率单位为基点（bp）。",
+  hTogether:"市场联动",noteTogether:"每日涨跌的相关系数：+1 总是同向，−1 总是反向，0 无关。",
+  cShift:"关系发生变化",cLead:"美股 → 中国股市（次日）",cLeadSub:"美股第 t 天 对比 中国第 t+1 天",
+  corrSummary:"显示完整相关性矩阵",hAll:"全部市场",
+  footer:`数据：Yahoo Finance（通过 yfinance，延迟、非官方）。σ 基于各市场此前 60 个交易日的日波动率。
+   “资金流向”根据价格推断，并非真实资金流数据。仅供研究，不构成投资建议。`,
+  asOf:"截至",latestP:p=>({day:"最新交易日",week:"最近一周",month:"最近一月"})[p],marketsAcross:(m,g)=>`${g} 个板块，共 ${m} 个市场`,latest:"最新",
+  regimeTitle:"股票和加密货币 对比 避险资产（黄金、VIX、日元），单位 σ","Risk-on":"风险偏好上升","Risk-off":"避险",Mixed:"分化",
+  play:"▶ 播放",pause:"❚❚ 暂停",closed:"休市",heightS:"高度（σ）",move:"涨跌",lastPrice:"最新价",movesWith:"联动市场",
+  unusual:"异常程度",cbarTitle:"涨跌（σ）",up:"上涨",down:"下跌",cbarNote:"超过 ±3σ 显示为最深颜色",
+  kMarket:"市场",kClosed:"休市",kTogether:"同向联动",kOpposite:"反向联动",
+  avg:"平均",inflow:"流入 ↑",outflow:"流出 ↓",flat:"持平",pctChange:"涨跌幅 %",bp:"基点",
+  Volatility:"波动率",noData:"无数据",notEnough:"数据不足。",
+  flipped:"方向反转",tighter:"联动比平时更紧密",looser:"联动比平时更松散",vs:"对比",dSuffix:"天",
+  usYesterday:"美股（前一日）",corrRolling:n=>`${n}日滚动相关系数`,now:"当前",days:n=>`${n} 天`,
+  thMarket:"市场",thLast:"最新价",thAsOf:"日期",
+  period_day:"日",period_week:"周",period_month:"月"}};
+const GROUP_ZH = {"Commodities":"大宗商品","US Stocks":"美股","China Stocks":"中国股市","FX":"外汇","Rates & Vol":"利率与波动率","Crypto":"加密货币"};
+let LANG = "en";
+try{ LANG = localStorage.getItem("mp-lang") || ((navigator.language||"").toLowerCase().startsWith("zh") ? "zh" : "en"); }catch(e){}
+const t = (k,...a) => { const v=(I18N[LANG]||I18N.en)[k] ?? I18N.en[k] ?? k; return typeof v==="function" ? v(...a) : v; };
+const NM = n => LANG==="zh" ? ((D.assets.find(a=>a.name===n)||{}).name_zh || n) : n;
+const GN = g => LANG==="zh" ? (GROUP_ZH[g]||g) : g;
+const LOCALE = () => LANG==="zh" ? "zh-CN" : "en-GB";
+function applyStatic(){
+  document.documentElement.lang = LANG==="zh" ? "zh-CN" : "en";
+  document.title = LANG==="zh" ? "市场脉搏 Market Pulse" : "Market Pulse";
+  document.querySelectorAll("[data-i18n]").forEach(el=>{ el.innerHTML = t(el.dataset.i18n); });
+  $("#langSeg").querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===LANG)));
+  $("#play").textContent = typeof timer!=="undefined" && timer ? t("pause") : t("play");
+}
 const $ = s => document.querySelector(s);
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const GROUP_ORDER = ["Commodities","US Stocks","China Stocks","FX","Rates & Vol","Crypto"];
@@ -218,7 +291,7 @@ function mix(a,b,t){const A=hex2rgb(a),B=hex2rgb(b);return `rgb(${A.map((v,i)=>M
 
 const unit = n => byName[n].kind==="yield" ? "bp" : "%";
 function fmtMove(v,n){ if(v==null) return "–"; const u=unit(n); return (v>=0?"+":"−")+Math.abs(v).toFixed(u==="bp"?0:2)+u; }
-const fmtZ = z => z==null ? "closed" : (z>=0?"+":"−")+Math.abs(z).toFixed(1)+"σ";
+const fmtZ = z => z==null ? t("closed") : (z>=0?"+":"−")+Math.abs(z).toFixed(1)+"σ";
 function fmtNum(v){ return v==null?"–":v>=1000?v.toLocaleString("en-US",{maximumFractionDigits:0}):v>=20?v.toFixed(2):v.toFixed(4); }
 const tip = $("#tip");
 function showTip(html,x,y){ tip.innerHTML=html; tip.style.display="block";
@@ -227,16 +300,16 @@ function showTip(html,x,y){ tip.innerHTML=html; tip.style.display="block";
   tip.style.left=L+"px"; tip.style.top=T+"px"; }
 const hideTip = () => tip.style.display="none";
 const cur = () => D.float.periods[state.period];
-const PERIOD_WORD = {day:"day",week:"week",month:"month"};
-function prettyDate(s){ return new Date(s+"T12:00:00").toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",year:"numeric"}); }
+const PERIOD_WORD = new Proxy({}, {get:(_,k)=>t("period_"+k)});
+function prettyDate(s){ return new Date(s+"T12:00:00").toLocaleDateString(LOCALE(),{weekday:"short",day:"numeric",month:"short",year:"numeric"}); }
 
 // ---------- header
 function renderHeader(){
-  $("#subtitle").textContent = `As of ${prettyDate(D.as_of)} · ${assets.length} markets across ${groupsPresent.length} groups`;
+  $("#subtitle").textContent = `${t("asOf")} ${prettyDate(D.as_of)} · ${t("marketsAcross",assets.length,groupsPresent.length)}`;
   const r = D.regime[state.period];
   const col = r.label==="Risk-on"?upC():r.label==="Risk-off"?dnC():css("--flat");
-  $("#regime").innerHTML = `<span class="dot" style="background:${col}"></span>Latest ${PERIOD_WORD[state.period]}: <b>${r.label}</b> <span title="stocks & crypto vs havens (gold, VIX, yen), in σ">(${r.score>=0?"+":""}${r.score})</span>`;
-  $("#headlines").innerHTML = D.headlines.map(h=>`<li>${h}</li>`).join("");
+  $("#regime").innerHTML = `<span class="dot" style="background:${col}"></span>${t("latestP",state.period)}: <b>${t(r.label)}</b> <span title="${t("regimeTitle")}">(${r.score>=0?"+":""}${r.score})</span>`;
+  $("#headlines").innerHTML = (LANG==="zh" && D.headlines_zh ? D.headlines_zh : D.headlines).map(h=>`<li>${h}</li>`).join("");
 }
 
 // ---------- 3D terrain (market float)
@@ -357,7 +430,7 @@ function drawFloat(){
   ctx.textAlign="left"; ctx.lineJoin="round";
   for(const p of order){
     const hov=p.a.name===hoverName; if(!all && Math.abs(p.z||0)<1.2 && !hov) continue;
-    const name=p.a.name, sub=p.z==null?"closed":`${fmtZ(p.z)} · ${fmtMove(p.v,name)}`;
+    const name=NM(p.a.name), sub=p.z==null?t("closed"):`${fmtZ(p.z)} · ${fmtMove(p.v,p.a.name)}`;
     ctx.font="600 12px system-ui,sans-serif"; const w1=ctx.measureText(name).width;
     ctx.font="11px system-ui,sans-serif"; const w=Math.max(w1, ctx.measureText(sub).width);
     const hit=bx=>placed.some(b=>!(bx.x>b.x+b.w||bx.x+bx.w<b.x||bx.y>b.y+b.h||bx.y+bx.h<b.y));
@@ -375,12 +448,12 @@ function floatHover(e){
   const name=best?best.a.name:null;
   if(name!==hoverName){ hoverName=name; drawFloat(); }
   if(best){ const a=best.a, pf=D.performance[a.name]||{};
-    const linked=links.filter(l=>l[0]===a.name||l[1]===a.name).map(l=>`${l[0]===a.name?l[1]:l[0]} ${l[2]>0?"+":"−"}${Math.abs(l[2]).toFixed(2)}`);
-    showTip(`<div class="t">${a.name} <span style="color:var(--ink-3);font-weight:400">${a.group}</span></div>
-      <div class="r">Height (σ)<b>${fmtZ(best.z)}</b></div>
-      <div class="r">Move (${PERIOD_WORD[state.period]})<b>${best.z==null?"closed":fmtMove(best.v,a.name)}</b></div>
-      <div class="r">Last price<b>${fmtNum(pf.last)}</b></div>
-      ${linked.length?`<div style="margin-top:4px;color:var(--ink-3)">Moves with: ${linked.slice(0,4).join(", ")}</div>`:""}`, e.clientX, e.clientY);
+    const linked=links.filter(l=>l[0]===a.name||l[1]===a.name).map(l=>`${NM(l[0]===a.name?l[1]:l[0])} ${l[2]>0?"+":"−"}${Math.abs(l[2]).toFixed(2)}`);
+    showTip(`<div class="t">${NM(a.name)} <span style="color:var(--ink-3);font-weight:400">${GN(a.group)}</span></div>
+      <div class="r">${t("heightS")}<b>${fmtZ(best.z)}</b></div>
+      <div class="r">${t("move")} (${PERIOD_WORD[state.period]})<b>${best.z==null?t("closed"):fmtMove(best.v,a.name)}</b></div>
+      <div class="r">${t("lastPrice")}<b>${fmtNum(pf.last)}</b></div>
+      ${linked.length?`<div style="margin-top:4px;color:var(--ink-3)">${t("movesWith")}: ${linked.slice(0,4).join(", ")}</div>`:""}`, e.clientX, e.clientY);
   } else hideTip();
 }
 let drag=null;
@@ -396,14 +469,14 @@ function spin(){ if($("#tSpin").checked && !drag){ cam.yaw+=0.004; drawFloat(); 
 function renderFloatLegend(){
   const stops=[]; for(let z=3;z>=-3;z-=0.25) stops.push(`${rgbStr(sigmaRGB(z))} ${((3-z)/6*100).toFixed(1)}%`);
   $("#floatLegend").innerHTML = `
-    <div class="cbar"><div class="cbar-title">Move (σ)</div>
+    <div class="cbar"><div class="cbar-title">${t("cbarTitle")}</div>
       <div class="cbar-body"><div class="cbar-grad" style="background:linear-gradient(to bottom,${stops.join(",")})"></div>
-      <div class="cbar-ticks">${[3,2,1,0,-1,-2,-3].map(z=>`<span style="top:${(3-z)/6*100}%">${z>0?"+":z<0?"−":""}${Math.abs(z)}${z===3?"σ ↑ up":z===-3?"σ ↓ down":""}</span>`).join("")}</div></div>
-      <div class="cbar-note">beyond ±3σ shown at full color</div></div>
-    <div class="key"><span><i class="dot" style="background:var(--ink)"></i>Market</span>
-      <span><i class="dot" style="border:1.5px dashed var(--ink)"></i>Closed</span>
-      <span><svg width="20" height="6"><line x1="0" y1="3" x2="20" y2="3" stroke="var(--ink-2)" stroke-width="1.5"/></svg>Move together</span>
-      <span><svg width="20" height="6"><line x1="0" y1="3" x2="20" y2="3" stroke="var(--ink-2)" stroke-width="1.5" stroke-dasharray="5 4"/></svg>Move opposite</span></div>`;
+      <div class="cbar-ticks">${[3,2,1,0,-1,-2,-3].map(z=>`<span style="top:${(3-z)/6*100}%">${z>0?"+":z<0?"−":""}${Math.abs(z)}${z===3?"σ ↑ "+t("up"):z===-3?"σ ↓ "+t("down"):"σ"}</span>`).join("")}</div></div>
+      <div class="cbar-note">${t("cbarNote")}</div></div>
+    <div class="key"><span><i class="dot" style="background:var(--ink)"></i>${t("kMarket")}</span>
+      <span><i class="dot" style="border:1.5px dashed var(--ink)"></i>${t("kClosed")}</span>
+      <span><svg width="20" height="6"><line x1="0" y1="3" x2="20" y2="3" stroke="var(--ink-2)" stroke-width="1.5"/></svg>${t("kTogether")}</span>
+      <span><svg width="20" height="6"><line x1="0" y1="3" x2="20" y2="3" stroke="var(--ink-2)" stroke-width="1.5" stroke-dasharray="5 4"/></svg>${t("kOpposite")}</span></div>`;
 }
 // flow-board bars share the terrain's color scale
 function moveColor(z){ return z==null ? css("--flat") : rgbStr(sigmaRGB(z)); }
@@ -417,12 +490,12 @@ let timer=null;
 const mainDay = D.float.dates.map((_,k)=>{ const z=Object.values(D.float.periods.day); return z.filter(s=>s.z[k]!=null).length>=z.length/2; });
 function nextIdx(k){ for(let j=k+1;j<D.float.dates.length;j++) if(state.period!=="day"||mainDay[j]) return j; return null; }
 $("#play").addEventListener("click",()=>{
-  if(timer){ clearInterval(timer); timer=null; $("#play").textContent="▶ Play"; return; }
+  if(timer){ clearInterval(timer); timer=null; $("#play").textContent=t("play"); return; }
   const last=D.float.dates.length-1;
   if(state.idx>=D.float.main_idx) setIdx(Math.max(0,last-60));
-  $("#play").textContent="❚❚ Pause";
+  $("#play").textContent=t("pause");
   timer=setInterval(()=>{ let k=nextIdx(state.idx);
-    if(k==null){ clearInterval(timer); timer=null; $("#play").textContent="▶ Play"; return; } setIdx(k); },420);
+    if(k==null){ clearInterval(timer); timer=null; $("#play").textContent=t("play"); return; } setIdx(k); },420);
 });
 ["#tLinks","#tLabels"].forEach(s=>$(s).addEventListener("change",drawFloat));
 
@@ -439,20 +512,20 @@ function renderFlow(){
     for(const z of [-2,2]) svg+=`<line x1="${mid+z*sc}" y1="0" x2="${mid+z*sc}" y2="${H}" stroke="var(--grid)" stroke-dasharray="2 3"/>`;
     rows.forEach((r,k)=>{ const y=k*rowH+4, cy=y+rowH/2;
       svg+=`<g class="frow" data-n="${r.n}" data-z="${r.z}" data-v="${r.v}"><rect x="0" y="${y}" width="${W}" height="${rowH}" fill="transparent"/>`;
-      svg+=`<text x="0" y="${cy+4}" font-size="12.5" fill="var(--ink)">${r.n}</text>`;
-      if(r.z==null){ svg+=`<text x="${mid}" y="${cy+4}" font-size="11.5" fill="var(--ink-3)" text-anchor="middle">closed</text></g>`; return; }
+      svg+=`<text x="0" y="${cy+4}" font-size="12.5" fill="var(--ink)">${NM(r.n)}</text>`;
+      if(r.z==null){ svg+=`<text x="${mid}" y="${cy+4}" font-size="11.5" fill="var(--ink-3)" text-anchor="middle">${t("closed")}</text></g>`; return; }
       const zc=Math.max(-3,Math.min(3,r.z)), w=Math.max(Math.abs(zc)*sc,2), x=zc>=0?mid:mid-w;
       svg+=`<rect x="${x}" y="${cy-7}" width="${w}" height="14" rx="3" fill="${moveColor(r.z)}"/>`;
       svg+=`<text x="${W}" y="${cy+4}" font-size="12" fill="var(--ink-2)" text-anchor="end" style="font-variant-numeric:tabular-nums">${fmtMove(r.v,r.n)}</text></g>`;
     });
     svg+=`<text x="${mid-2*sc}" y="${H}" font-size="9.5" fill="var(--ink-3)" text-anchor="middle">−2σ</text><text x="${mid+2*sc}" y="${H}" font-size="9.5" fill="var(--ink-3)" text-anchor="middle">+2σ</text></svg>`;
-    const word = avg==null?"closed":avg>0.5?"inflow ↑":avg<-0.5?"outflow ↓":"flat";
-    out.push(`<div class="card"><h3>${g}<small>avg ${avg==null?"–":fmtZ(avg)} · ${word}</small></h3>${svg}</div>`);
+    const word = avg==null?t("closed"):avg>0.5?t("inflow"):avg<-0.5?t("outflow"):t("flat");
+    out.push(`<div class="card"><h3>${GN(g)}<small>${t("avg")} ${avg==null?"–":fmtZ(avg)} · ${word}</small></h3>${svg}</div>`);
   }
   $("#flow").innerHTML=out.join("");
   document.querySelectorAll(".frow").forEach(el=>{
     el.addEventListener("mousemove",e=>{ const n=el.dataset.n, pf=D.performance[n]||{}, z=el.dataset.z==="null"?null:+el.dataset.z, v=el.dataset.v==="null"?null:+el.dataset.v;
-      showTip(`<div class="t">${n}</div><div class="r">Move<b>${z==null?"closed":fmtMove(v,n)}</b></div><div class="r">Unusualness<b>${fmtZ(z)}</b></div><div class="r">1Y<b>${fmtMove(pf["1Y"],n)}</b></div>`,e.clientX,e.clientY); });
+      showTip(`<div class="t">${NM(n)}</div><div class="r">${t("move")}<b>${z==null?t("closed"):fmtMove(v,n)}</b></div><div class="r">${t("unusual")}<b>${fmtZ(z)}</b></div><div class="r">1Y<b>${fmtMove(pf["1Y"],n)}</b></div>`,e.clientX,e.clientY); });
     el.addEventListener("mouseleave",hideTip); });
 }
 
@@ -461,7 +534,7 @@ function lineChart(el, series, opts){
   // series: [{name, dates[], values[], color}] ; shared y scale; hover crosshair + tooltip
   const W=Math.max(280, el.clientWidth||520), H=opts.h||210, m={l:44,r:opts.directLabels?112:12,t:10,b:24};
   const xs=series.flatMap(s=>s.dates.map(d=>+new Date(d))), ys=series.flatMap(s=>s.values).filter(v=>v!=null);
-  if(!xs.length){ el.innerHTML='<p class="note">No data</p>'; return; }
+  if(!xs.length){ el.innerHTML=`<p class="note">${t("noData")}</p>`; return; }
   const x0=Math.min(...xs), x1=Math.max(...xs); let y0=Math.min(...ys,opts.zero?0:Infinity), y1=Math.max(...ys,opts.zero?0:-Infinity);
   if(opts.yRange){[y0,y1]=opts.yRange;} const pad=(y1-y0||1)*0.08; if(!opts.yRange){y0-=pad;y1+=pad;}
   const X=t=>m.l+(t-x0)/(x1-x0||1)*(W-m.l-m.r), Y=v=>m.t+(1-(v-y0)/(y1-y0||1))*(H-m.t-m.b);
@@ -471,13 +544,13 @@ function lineChart(el, series, opts){
     `<text x="${m.l-6}" y="${Y(v)+4}" font-size="10.5" fill="var(--ink-3)" text-anchor="end">${opts.yfmt(v)}</text>`; }
   const months=[]; for(let d=new Date(x0); d<=x1; d.setMonth(d.getMonth()+1)){ const t=new Date(d.getFullYear(),d.getMonth(),1); if(+t>=x0) months.push(t); }
   const every=Math.ceil(months.length/6);
-  months.forEach((t,k)=>{ if(k%every) return; s+=`<text x="${X(+t)}" y="${H-6}" font-size="10.5" fill="var(--ink-3)" text-anchor="middle">${t.toLocaleDateString("en-GB",{month:"short"})}${t.getMonth()===0?" "+String(t.getFullYear()).slice(2):""}</text>`; });
+  months.forEach((t,k)=>{ if(k%every) return; s+=`<text x="${X(+t)}" y="${H-6}" font-size="10.5" fill="var(--ink-3)" text-anchor="middle">${t.toLocaleDateString(LOCALE(),{month:"short"})}${t.getMonth()===0?" "+String(t.getFullYear()).slice(2):""}</text>`; });
   const ends=[];
   series.forEach(se=>{ let dpath=""; se.values.forEach((v,k)=>{ if(v==null) return; dpath+=(dpath?"L":"M")+X(+new Date(se.dates[k])).toFixed(1)+","+Y(v).toFixed(1); });
     s+=`<path d="${dpath}" fill="none" stroke="${se.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
     const lv=se.values[se.values.length-1]; if(lv!=null) ends.push({y:Y(lv),name:se.name,v:lv,color:se.color}); });
   if(opts.directLabels){ ends.sort((a,b)=>a.y-b.y); for(let k=1;k<ends.length;k++) if(ends[k].y-ends[k-1].y<13) ends[k].y=ends[k-1].y+13;
-    for(const e of ends) s+=`<text x="${W-m.r+6}" y="${e.y+4}" font-size="11" fill="var(--ink-2)">${e.name.length>10?e.name.slice(0,9)+"…":e.name} <tspan fill="var(--ink)" font-weight="600">${opts.yfmt(e.v)}</tspan></text>`; }
+    for(const e of ends) s+=`<text x="${W-m.r+6}" y="${e.y+4}" font-size="11" fill="var(--ink-2)">${e.name.length>(LANG==="zh"?7:10)?e.name.slice(0,LANG==="zh"?6:9)+"…":e.name} <tspan fill="var(--ink)" font-weight="600">${opts.yfmt(e.v)}</tspan></text>`; }
   s+=`<line class="xh" y1="${m.t}" y2="${H-m.b}" stroke="var(--ink-3)" stroke-dasharray="3 3" visibility="hidden"/>`;
   s+=`<rect class="hit" x="${m.l}" y="${m.t}" width="${W-m.l-m.r}" height="${H-m.t-m.b}" fill="transparent"/></svg>`;
   el.innerHTML=s;
@@ -502,11 +575,11 @@ function renderTrends(){
       const isY=set[0].kind==="yield";
       const series=set.map((a,k)=>{ const L=D.lines[a.name]; const idx=L.dates.map((d,j)=>[d,j]).filter(([d])=>+new Date(d)>=start);
         if(!idx.length) return null; const b=L.values[idx[0][1]];
-        return {name:a.name, color:css(SERIES[k%SERIES.length]), dates:idx.map(([d])=>d),
+        return {name:NM(a.name), color:css(SERIES[k%SERIES.length]), dates:idx.map(([d])=>d),
                 values:idx.map(([,j])=>isY?(L.values[j]-b)*100:(L.values[j]/b-1)*100)}; }).filter(Boolean);
       const card=document.createElement("div"); card.className="card";
-      const title = sets.length>1 ? (isY?"US 10Y Yield":"Volatility") : g;
-      card.innerHTML=`<h3>${title}<small>${isY?"bp":"% change"}</small></h3>`+
+      const title = sets.length>1 ? (isY?NM("US 10Y Yield"):t("Volatility")) : GN(g);
+      card.innerHTML=`<h3>${title}<small>${isY?t("bp"):t("pctChange")}</small></h3>`+
         (series.length>1?`<div class="chips">${series.map(s=>`<span><i style="background:${s.color}"></i>${s.name}</span>`).join("")}</div>`:"")+"<div></div>";
       out.appendChild(card);
       jobs.push(()=>lineChart(card.lastChild, series, {zero:true, directLabels:true, yfmt:v=>isY?(v>=0?"+":"−")+Math.abs(v).toFixed(0):(v>=0?"+":"−")+Math.abs(v).toFixed(Math.abs(v)<10?1:0)+"%"}));
@@ -517,49 +590,51 @@ function renderTrends(){
 
 // ---------- relationships
 function renderRelations(){
-  $("#shiftSub").textContent=`${D.corr.w_short}d vs ${D.corr.w_long}d`;
+  $("#shiftSub").textContent=`${D.corr.w_short}${t("dSuffix")} ${t("vs")} ${D.corr.w_long}${t("dSuffix")}`;
   $("#shifts").innerHTML = D.shifts.slice(0,7).map(s=>{
     const flip=Math.sign(s.short)!==Math.sign(s.long)&&Math.min(Math.abs(s.short),Math.abs(s.long))>0.1;
-    const what=flip?"flipped direction":Math.abs(s.short)>Math.abs(s.long)?"tighter than usual":"looser than usual";
-    return `<div><b>${s.a}</b> & <b>${s.b}</b><div class="meta">${what}</div></div><div style="text-align:right;font-variant-numeric:tabular-nums">${s.long>=0?"+":"−"}${Math.abs(s.long).toFixed(2)} → <b>${s.short>=0?"+":"−"}${Math.abs(s.short).toFixed(2)}</b></div>`; }).join("");
+    const what=flip?t("flipped"):Math.abs(s.short)>Math.abs(s.long)?t("tighter"):t("looser");
+    return `<div><b>${NM(s.a)}</b> & <b>${NM(s.b)}</b><div class="meta">${what}</div></div><div style="text-align:right;font-variant-numeric:tabular-nums">${s.long>=0?"+":"−"}${Math.abs(s.long).toFixed(2)} → <b>${s.short>=0?"+":"−"}${Math.abs(s.short).toFixed(2)}</b></div>`; }).join("");
   const ll=D.leadlag, us=Object.keys(ll), cn=us.length?Object.keys(ll[us[0]]):[];
   const cell=v=>{ if(v==null) return "<td>–</td>"; const t=Math.min(Math.abs(v)/0.8,1); return `<td style="background:${mix(css("--surface"),v>=0?css("--s1"):css("--down"),t*0.55)}">${v>=0?"+":"−"}${Math.abs(v).toFixed(2)}</td>`; };
-  $("#leadlag").innerHTML = us.length?`<table><thead><tr><th>US (yesterday)</th>${cn.map(c=>`<th>${c}</th>`).join("")}</tr></thead><tbody>${us.map(u=>`<tr><td>${u}</td>${cn.map(c=>cell(ll[u][c])).join("")}</tr>`).join("")}</tbody></table>`:'<p class="note">Not enough data.</p>';
+  $("#leadlag").innerHTML = us.length?`<table><thead><tr><th>${t("usYesterday")}</th>${cn.map(c=>`<th>${NM(c)}</th>`).join("")}</tr></thead><tbody>${us.map(u=>`<tr><td>${NM(u)}</td>${cn.map(c=>cell(ll[u][c])).join("")}</tr>`).join("")}</tbody></table>`:`<p class="note">${t("notEnough")}</p>`;
   // rolling correlations: one series each
   const rc=$("#rolling"); rc.innerHTML=""; const rjobs=[];
   for(const [name,s] of Object.entries(D.rolling)){ const card=document.createElement("div"); card.className="card";
     const last=s.values[s.values.length-1];
-    card.innerHTML=`<h3>${name}<small>${D.w_roll}-day correlation · now ${last>=0?"+":"−"}${Math.abs(last).toFixed(2)}</small></h3><div></div>`; rc.appendChild(card);
+    card.innerHTML=`<h3>${name.split(" / ").map(NM).join(" / ")}<small>${t("corrRolling",D.w_roll)} · ${t("now")} ${last>=0?"+":"−"}${Math.abs(last).toFixed(2)}</small></h3><div></div>`; rc.appendChild(card);
     rjobs.push(()=>lineChart(card.lastChild,[{name,dates:s.dates,values:s.values,color:css("--s1")}],{h:150,yRange:[-1,1],yfmt:v=>(v>=0?"+":"−")+Math.abs(v).toFixed(1)})); }
   rjobs.forEach(f=>f());
   renderCorrGrid();
 }
 function renderCorrGrid(){
-  $("#corrSeg").innerHTML=`<button data-v="short" aria-pressed="${state.corr==="short"}">${D.corr.w_short} days</button><button data-v="long" aria-pressed="${state.corr==="long"}">${D.corr.w_long} days</button>`;
+  $("#corrSeg").innerHTML=`<button data-v="short" aria-pressed="${state.corr==="short"}">${t("days",D.corr.w_short)}</button><button data-v="long" aria-pressed="${state.corr==="long"}">${t("days",D.corr.w_long)}</button>`;
   $("#corrSeg").querySelectorAll("button").forEach(b=>b.onclick=()=>{state.corr=b.dataset.v; renderCorrGrid();});
   const n=D.corr.names, M=D.corr[state.corr];
   const ord=[...n.keys()].sort((a,b)=>groupsPresent.indexOf(byName[n[a]].group)-groupsPresent.indexOf(byName[n[b]].group));
   const cell=(v,diag)=>{ if(diag) return `<td style="background:var(--surface-2)"></td>`; if(v==null) return "<td>–</td>";
     const t=Math.min(Math.abs(v),1); return `<td title="${v.toFixed(2)}" style="background:${mix(css("--surface"),v>=0?css("--s1"):css("--down"),t*0.75)};color:${t>0.6?"#fff":"var(--ink)"}">${v>=0?"":"−"}${Math.abs(v).toFixed(1).replace(/^0/,"")}</td>`; };
-  $("#corrgrid").innerHTML=`<table class="corrgrid"><thead><tr><th></th>${ord.map(k=>`<th>${n[k]}</th>`).join("")}</tr></thead><tbody>${ord.map(r=>`<tr><th style="text-align:left">${n[r]}</th>${ord.map(c=>cell(M[r][c],r===c)).join("")}</tr>`).join("")}</tbody></table>`;
+  $("#corrgrid").innerHTML=`<table class="corrgrid"><thead><tr><th></th>${ord.map(k=>`<th>${NM(n[k])}</th>`).join("")}</tr></thead><tbody>${ord.map(r=>`<tr><th style="text-align:left">${NM(n[r])}</th>${ord.map(c=>cell(M[r][c],r===c)).join("")}</tr>`).join("")}</tbody></table>`;
 }
 
 // ---------- performance table
 function renderPerf(){
   const cols=["1D","1W","1M","3M","YTD","1Y"], scale={"1D":2,"1W":4,"1M":8,"3M":12,"YTD":20,"1Y":25};
   const bg=(v,c,n)=>{ if(v==null) return ""; const s=unit(n)==="bp"?scale[c]*10:scale[c]; const t=Math.min(Math.abs(v)/s,1)*0.45; return `background:${mix(css("--surface"),v>=0?upC():dnC(),t)}`; };
-  let h=`<table><thead><tr><th>Market</th><th>Last</th>${cols.map(c=>`<th>${c}</th>`).join("")}<th>As of</th></tr></thead><tbody>`;
-  for(const g of groupsPresent){ h+=`<tr><td colspan="${cols.length+3}" style="font-weight:600;color:var(--ink-2);padding-top:10px">${g}</td></tr>`;
+  let h=`<table><thead><tr><th>${t("thMarket")}</th><th>${t("thLast")}</th>${cols.map(c=>`<th>${c}</th>`).join("")}<th>${t("thAsOf")}</th></tr></thead><tbody>`;
+  for(const g of groupsPresent){ h+=`<tr><td colspan="${cols.length+3}" style="font-weight:600;color:var(--ink-2);padding-top:10px">${GN(g)}</td></tr>`;
     for(const a of assets.filter(x=>x.group===g)){ const p=D.performance[a.name]; if(!p) continue;
-      h+=`<tr><td>${a.name}</td><td>${fmtNum(p.last)}</td>${cols.map(c=>`<td style="${bg(p[c],c,a.name)}">${fmtMove(p[c],a.name)}</td>`).join("")}<td style="color:var(--ink-3)">${p.date}</td></tr>`; } }
+      h+=`<tr><td>${NM(a.name)}</td><td>${fmtNum(p.last)}</td>${cols.map(c=>`<td style="${bg(p[c],c,a.name)}">${fmtMove(p[c],a.name)}</td>`).join("")}<td style="color:var(--ink-3)">${p.date}</td></tr>`; } }
   $("#perf").innerHTML=h+"</tbody></table>";
 }
 
 // ---------- controls
 function seg(id,key,after){ $(id).querySelectorAll("button").forEach(b=>{ b.setAttribute("aria-pressed",String(b.dataset.v===String(state[key])));
   b.onclick=()=>{ state[key]=isNaN(+b.dataset.v)?b.dataset.v:+b.dataset.v; $(id).querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); after(); }; }); }
-function renderAll(){ renderHeader(); renderFloatLegend(); drawFloat(); renderFlow(); renderTrends(); renderRelations(); renderPerf(); }
+function renderAll(){ applyStatic(); renderHeader(); renderFloatLegend(); drawFloat(); renderFlow(); renderTrends(); renderRelations(); renderPerf(); }
 seg("#periodSeg","period",()=>{ renderHeader(); drawFloat(); renderFlow(); });
+$("#langSeg").querySelectorAll("button").forEach(b=>b.onclick=()=>{ LANG=b.dataset.v; try{localStorage.setItem("mp-lang",LANG);}catch(e){}
+  renderAll(); $("#dateLbl").textContent=prettyDate(D.float.dates[state.idx]); });
 seg("#colorSeg","colors",()=>{ try{localStorage.setItem("mp-colors",state.colors);}catch(e){} renderAll(); });
 seg("#rangeSeg","range",renderTrends);
 state.theme=(document.documentElement.dataset.theme)||"auto";
