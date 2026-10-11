@@ -10,7 +10,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
 
-[**▶ 在线页面**](https://HuangCixin.github.io/market-pulse/)（真实数据，每个工作日更新）· [演示](https://HuangCixin.github.io/market-pulse/demo.html)（模拟数据）
+[**▶ 在线页面**](https://HuangCixin.github.io/market-pulse/)（真实数据，工作日每 30 分钟更新，加密货币实时）· [演示](https://HuangCixin.github.io/market-pulse/demo.html)（模拟数据）
 
 ![市场地形图](docs/images/terrain-zh.png)
 
@@ -24,7 +24,7 @@ Market Pulse 每天下载 **21 个市场**的价格，覆盖大宗商品、美�
 - **资金流向了哪里。** 市场按资产类别分成彩色区域（金属、外汇、中国股市、能源、美股与美债、加密货币），整片区域上升或下沉，就代表资金在不同资产之间轮动。
 - **市场之间如何联动。** 相关系数、近期发生变化的关系，以及美股对上海和香港市场的次日传导效应。
 
-网页可离线打开，没有任何外部依赖，并可一键切换 **English / 中文**。
+网页可离线打开，没有任何外部依赖，并可一键切换 **English / 中文**。联网时，比特币、以太坊和 Solana 的价格还会通过交易所公开行情实时更新。
 
 ## 覆盖的市场
 
@@ -90,10 +90,16 @@ performance.csv   表现数据表
 
 ### 每天自动运行
 
-**在 GitHub 上（已配置好）：** [`Daily update`](.github/workflows/pages.yml) 工作流会在每个工作日
-UTC 22:30（巴黎 00:30，北京 06:30）用真实数据重新生成页面，并发布到 GitHub Pages。
-如果某天数据下载失败，前一天的页面会继续保留。也可以在 **Actions → Daily update → Run workflow** 手动运行。
-公开仓库如果连续 60 天没有任何提交，GitHub 会暂停定时任务，在 Actions 页面点一下 **Enable workflow** 即可恢复。
+**在 GitHub 上（已配置好）：** [`Daily update`](.github/workflows/pages.yml) 工作流用真实数据重新生成页面并发布到 GitHub Pages：
+
+- 工作日 UTC 00:07–21:37 每 30 分钟一次（从亚洲开盘到美股收盘），生成盘中页面；
+- 工作日 UTC 22:37，美股收盘后，生成当天的收盘页面；
+- 周末每 3 小时一次，这时只有加密货币在交易。
+
+还在交易的市场在页面上标为**盘中**，没走完的这一天不计入相关性（见[盘中更新](docs/METHODOLOGY.zh-CN.md#8-盘中更新与实时价格)）。
+加密货币价格还会在浏览器里实时更新。如果某次下载失败，之前的页面会继续保留。也可以在
+**Actions → Daily update → Run workflow** 手动运行。公开仓库连续 60 天没有活动，GitHub 会暂停定时任务，
+所以 [`Keep schedules alive`](.github/workflows/keepalive.yml) 每月检查一次：仓库 30 天没有提交时，自动做一次空提交。
 
 **在你自己的电脑上：**
 
@@ -125,6 +131,8 @@ config.yaml ──► fetch.py ──► analyze.py ──► report.py ──�
 - **尊重交易日历。** 节假日不会被填成“零涨跌”。计算相关性时所有市场都只取工作日，
   因此加密货币周一的涨跌与股票一样覆盖“周五 → 周一”。
 - **考虑时区。** 亚洲市场在纽约开盘前就已收盘，所以美股对中国股市的影响按滞后一天计算。
+- **没走完的一天只显示，不计算。** 交易时段内，市场当天的日线还在变化。它会显示在页面上并标为“盘中”，
+  但不计入相关性和美股 → 中国股市的表格。
 - **按资产类别分区。** 市场固定在 `config.yaml` 定义的彩色分区里，每个市场每天都在同一个位置。
 
 > **关于地形图：** 圆点才是数据。圆点之间的曲面是为了呈现地形效果而做的平滑过渡，
@@ -161,7 +169,10 @@ python run_daily.py --demo --open  # 修改 template.html 后检查网页
 - **数据来源：** 价格来自 Yahoo Finance，通过非官方的 `yfinance` 库获取，存在延迟、偶尔缺失，
   仅供个人使用。本仓库只包含代码，不包含任何市场数据。
 - **“资金流向”是根据价格推断的**，并非真实的资金流数据。
-- **布局会随时间变化**，因为市场之间的相关性本身在变化。
+- **交易时间是近似的。** 交易时段写在 `config.yaml` 里，没有各交易所的节假日表，所以节假日会显示
+  “暂无今日数据”而不是“休市”。定时任务有时会晚几分钟开始。
+- **加密货币实时价格**来自 Coinbase 公开行情（Kraken 备用）。看网页的人的浏览器会直接连接这些交易所；
+  价格旁边的按钮可以暂停。
 
 ## 免责声明
 

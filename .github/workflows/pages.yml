@@ -1,13 +1,20 @@
 # Builds Market Pulse with real market data and publishes it to GitHub Pages.
-#   - every weekday after the US close (22:30 UTC = 00:30 Paris / 06:30 Beijing)
+#   - weekdays every 30 minutes from 00:07 to 21:37 UTC (Asia open → US close): intraday pages
+#   - weekdays 22:37 UTC, after the US close: the day's closing page
+#   - weekends every 3 hours (only crypto trades; live crypto prices also update in the browser)
 #   - on every push to main, and on demand (Actions → Daily update → Run workflow)
+# Minutes 7/37 avoid the top of the hour, when GitHub delays scheduled runs the most; a run can
+# still start a few minutes late. Bars of markets still trading are marked as unfinished
+# (market/sessions.py) and kept out of correlations.
 # The site has:  index.html (latest real data), demo.html (synthetic data), summary.json
 # One-time setup: repository Settings → Pages → Source: "GitHub Actions".
 name: Daily update
 
 on:
   schedule:
-    - cron: "30 22 * * 1-5"
+    - cron: "7,37 0-21 * * 1-5"
+    - cron: "37 22 * * 1-5"
+    - cron: "7 */3 * * 0,6"
   push:
     branches: [main]
   workflow_dispatch:
@@ -36,8 +43,8 @@ jobs:
           cache: pip
       - run: pip install -r requirements.txt
 
-      # If the download fails the job stops here and yesterday's page stays online.
-      - name: Build today's page (real data)
+      # If the download fails the job stops here and the previous page stays online.
+      - name: Build the page (real data)
         run: |
           python run_daily.py
           latest=$(ls -d reports/*/ | grep -v -- '-demo/' | sort | tail -1)

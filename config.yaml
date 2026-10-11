@@ -4,44 +4,62 @@
 #       "yield" -> analyzed with daily change in percentage points (rates are not prices)
 # name_zh: Chinese display name (used when the page is switched to 中文).
 # region: used to group the report and to build the US -> China lead/lag table.
+# session: trading hours (see `sessions:` below), used for intraday updates.
 
 lookback_days: 750          # history to download (calendar days), ~2 years of trading
 corr_windows: [60, 250]     # short and long correlation windows (trading days)
 rolling_window: 60          # window for rolling-correlation charts
 
+# Intraday updates: the page is rebuilt during the day. A market that is still trading has a daily
+# bar that is not finished yet ("partial"): it is shown, but kept out of correlations and the
+# US -> China table. Hours are local exchange time; exchange holidays are not modelled.
+# overnight: the session opens the evening before its trading date (futures).
+sessions:
+  us:       {tz: America/New_York, open: "09:30", close: "16:00"}
+  china:    {tz: Asia/Shanghai,    open: "09:30", close: "15:00"}
+  hongkong: {tz: Asia/Hong_Kong,   open: "09:30", close: "16:10"}
+  futures:  {tz: America/Chicago,  open: "17:00", close: "16:00", overnight: true}
+  fx:       {tz: Europe/London,    open: "00:00", close: "24:00"}
+  crypto:   {tz: UTC, always: true}
+
+# Live crypto prices in the browser (public Coinbase feed, Kraken as fallback). The page keeps
+# working without them (offline, or if the feeds are blocked). Set to false to turn off.
+live:
+  crypto: true
+
 assets:
   # --- Commodities ---
-  - {name: Gold,          ticker: "GC=F",      group: Commodities, region: Global, kind: price, name_zh: "黄金"}
-  - {name: Silver,        ticker: "SI=F",      group: Commodities, region: Global, kind: price, name_zh: "白银"}
-  - {name: WTI Oil,       ticker: "CL=F",      group: Commodities, region: Global, kind: price, name_zh: "WTI原油"}
-  - {name: Brent Oil,     ticker: "BZ=F",      group: Commodities, region: Global, kind: price, name_zh: "布伦特原油"}
-  - {name: Copper,        ticker: "HG=F",      group: Commodities, region: Global, kind: price, name_zh: "铜"}
+  - {name: Gold,          ticker: "GC=F",      group: Commodities, region: Global, kind: price, name_zh: "黄金", session: futures}
+  - {name: Silver,        ticker: "SI=F",      group: Commodities, region: Global, kind: price, name_zh: "白银", session: futures}
+  - {name: WTI Oil,       ticker: "CL=F",      group: Commodities, region: Global, kind: price, name_zh: "WTI原油", session: futures}
+  - {name: Brent Oil,     ticker: "BZ=F",      group: Commodities, region: Global, kind: price, name_zh: "布伦特原油", session: futures}
+  - {name: Copper,        ticker: "HG=F",      group: Commodities, region: Global, kind: price, name_zh: "铜", session: futures}
 
   # --- US equities ---
-  - {name: S&P 500,       ticker: "^GSPC",     group: US Stocks,   region: US,     kind: price, name_zh: "标普500"}
-  - {name: Nasdaq,        ticker: "^IXIC",     group: US Stocks,   region: US,     kind: price, name_zh: "纳斯达克"}
-  - {name: Dow Jones,     ticker: "^DJI",      group: US Stocks,   region: US,     kind: price, name_zh: "道琼斯"}
-  - {name: VIX,           ticker: "^VIX",      group: Rates & Vol, region: US,     kind: price, name_zh: "VIX恐慌指数"}
+  - {name: S&P 500,       ticker: "^GSPC",     group: US Stocks,   region: US,     kind: price, name_zh: "标普500", session: us}
+  - {name: Nasdaq,        ticker: "^IXIC",     group: US Stocks,   region: US,     kind: price, name_zh: "纳斯达克", session: us}
+  - {name: Dow Jones,     ticker: "^DJI",      group: US Stocks,   region: US,     kind: price, name_zh: "道琼斯", session: us}
+  - {name: VIX,           ticker: "^VIX",      group: Rates & Vol, region: US,     kind: price, name_zh: "VIX恐慌指数", session: us}
 
   # --- Chinese equities ---
-  - {name: Shanghai Comp, ticker: "000001.SS", group: China Stocks, region: China, kind: price, name_zh: "上证指数"}
-  - {name: CSI 300,       ticker: "000300.SS", group: China Stocks, region: China, kind: price, name_zh: "沪深300"}
-  - {name: Shenzhen Comp, ticker: "399001.SZ", group: China Stocks, region: China, kind: price, name_zh: "深证成指"}
-  - {name: Hang Seng,     ticker: "^HSI",      group: China Stocks, region: China, kind: price, name_zh: "恒生指数"}
+  - {name: Shanghai Comp, ticker: "000001.SS", group: China Stocks, region: China, kind: price, name_zh: "上证指数", session: china}
+  - {name: CSI 300,       ticker: "000300.SS", group: China Stocks, region: China, kind: price, name_zh: "沪深300", session: china}
+  - {name: Shenzhen Comp, ticker: "399001.SZ", group: China Stocks, region: China, kind: price, name_zh: "深证成指", session: china}
+  - {name: Hang Seng,     ticker: "^HSI",      group: China Stocks, region: China, kind: price, name_zh: "恒生指数", session: hongkong}
 
   # --- Currencies (quoted as Yahoo shows them) ---
-  - {name: Dollar Index,  ticker: "DX-Y.NYB",  group: FX,          region: Global, kind: price, name_zh: "美元指数"}
-  - {name: EUR/USD,       ticker: "EURUSD=X",  group: FX,          region: Global, kind: price, name_zh: "欧元/美元"}
-  - {name: USD/CNY,       ticker: "CNY=X",     group: FX,          region: China,  kind: price, name_zh: "美元/人民币"}
-  - {name: USD/JPY,       ticker: "JPY=X",     group: FX,          region: Global, kind: price, name_zh: "美元/日元"}
+  - {name: Dollar Index,  ticker: "DX-Y.NYB",  group: FX,          region: Global, kind: price, name_zh: "美元指数", session: fx}
+  - {name: EUR/USD,       ticker: "EURUSD=X",  group: FX,          region: Global, kind: price, name_zh: "欧元/美元", session: fx}
+  - {name: USD/CNY,       ticker: "CNY=X",     group: FX,          region: China,  kind: price, name_zh: "美元/人民币", session: fx}
+  - {name: USD/JPY,       ticker: "JPY=X",     group: FX,          region: Global, kind: price, name_zh: "美元/日元", session: fx}
 
   # --- Rates ---
-  - {name: US 10Y Yield,  ticker: "^TNX",      group: Rates & Vol, region: US,     kind: yield, name_zh: "美债10年期收益率"}
+  - {name: US 10Y Yield,  ticker: "^TNX",      group: Rates & Vol, region: US,     kind: yield, name_zh: "美债10年期收益率", session: us}
 
   # --- Crypto (trades 7 days a week) ---
-  - {name: Bitcoin,       ticker: "BTC-USD",   group: Crypto,      region: Global, kind: price, name_zh: "比特币"}
-  - {name: Ethereum,      ticker: "ETH-USD",   group: Crypto,      region: Global, kind: price, name_zh: "以太坊"}
-  - {name: Solana,        ticker: "SOL-USD",   group: Crypto,      region: Global, kind: price, name_zh: "Solana"}
+  - {name: Bitcoin,       ticker: "BTC-USD",   group: Crypto,      region: Global, kind: price, name_zh: "比特币", session: crypto}
+  - {name: Ethereum,      ticker: "ETH-USD",   group: Crypto,      region: Global, kind: price, name_zh: "以太坊", session: crypto}
+  - {name: Solana,        ticker: "SOL-USD",   group: Crypto,      region: Global, kind: price, name_zh: "Solana", session: crypto}
 
 # Terrain zones: markets are placed in fixed, colored areas by asset class,
 # laid out left to right, 3 per row. Markets not listed here get a zone named after their group.

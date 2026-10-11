@@ -18,6 +18,7 @@ performance, correlation shifts, US→China lead/lag), `performance.csv`.
 ## Layout
 - `config.yaml` — markets (Yahoo Finance tickers), groups, windows, key pairs. Add/remove markets here, not in code.
 - `market/fetch.py` — yfinance download + CSV cache; `demo_prices()` builds synthetic data.
+- `market/sessions.py` — trading sessions (`sessions:` in config.yaml): which markets are trading at build time and which bars are unfinished.
 - `market/analyze.py` — all numbers: moves, σ, zone layout, correlations, regime. Returns a JSON-able dict.
 - `market/report.py` — headlines, embeds the dict into the template, writes summary files.
 - `market/template.html` — the page: vanilla JS + canvas/SVG. Data arrives as `const D = {...}`.
@@ -40,6 +41,8 @@ performance, correlation shifts, US→China lead/lag), `performance.csv`.
    and a collapsed correlation grid (the user prefers not to lead with heatmaps).
 5. **All markets** table.
 Controls: Language (English / 中文), Period (day/week/month), Colors (green-up Western / red-up Chinese convention), Theme.
+Under the headlines: a live crypto strip (Coinbase WebSocket, Kraken fallback; pausable; off on demo pages). Header: build time,
+intraday pill, and a "new data" reload notice on the published site.
 
 ## Bilingual rule (English / 中文)
 Every visible string exists in both languages. In template.html: add keys to BOTH `I18N.en` and `I18N.zh`,
@@ -56,6 +59,10 @@ README.md / README.zh-CN.md, docs/METHODOLOGY.md / docs/METHODOLOGY.zh-CN.md.
 - US/China trade in different hours: use the lead/lag table (US day t → China day t+1), not same-day correlation.
 - "Money moved" is a price-based read (risk-on/off), not actual fund-flow data. Say so when explaining.
 - USD/CNY up = yuan weaker; USD/JPY up = yen weaker; EUR/USD up = dollar weaker.
+- Intraday: `run_analysis(prices, cfg, now=...)`. Bars of markets still trading at `now` are unfinished: shown (tagged live),
+  but removed before correlations, rolling correlations and lead/lag (`final_prices`). Demo and --cache builds pass now=None.
+- Live crypto (browser): `res["live"]["crypto"]` holds the references, bar counts and vol so the page recomputes moves
+  exactly like the build. Keep it consistent with `float_frames` and `performance` (tests/test_sessions.py checks this).
 
 ## When asked "what happened in the markets today?"
 Run `python run_daily.py`, read the latest `reports/*/summary.json`, and explain in plain language:
@@ -66,7 +73,8 @@ spillover. Present data, not investment advice.
 - Python 3.10+, pandas, numpy, yfinance, pyyaml. No plotting libraries; charts are drawn in template.html.
 - The page must stay a single self-contained file (no CDN), readable in light and dark mode, and usable on a phone.
 - Test changes with `pytest` and `python run_daily.py --demo --open` before running on live data.
-- CI (.github/workflows/ci.yml) runs the tests. pages.yml ("Daily update") runs every weekday at 22:30 UTC,
-  builds the page with real data and publishes index.html (real), demo.html (synthetic) and summary.json to GitHub Pages.
+- CI (.github/workflows/ci.yml) runs the tests. pages.yml ("Daily update") runs weekdays every 30 min 00:07–21:37 UTC, at 22:37 UTC,
+  and every 3 h at weekends; it builds the page with real data and publishes index.html (real), demo.html (synthetic) and summary.json
+  to GitHub Pages. keepalive.yml makes an empty commit monthly if the repo has been quiet 30 days (GitHub pauses schedules after 60).
   Pages built with --demo show a "Synthetic demo data / 模拟演示数据" badge (`D.demo`).
 - Full methodology: docs/METHODOLOGY.md. Update it (both languages) when changing calculations.

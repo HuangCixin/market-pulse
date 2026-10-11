@@ -35,6 +35,7 @@
   --accent:#3987e5;
 }
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 body{margin:0;background:var(--surface);color:var(--ink);
   font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,"PingFang SC","Microsoft YaHei",sans-serif}
 main{max-width:1180px;margin:0 auto;padding:24px 16px 64px}
@@ -109,6 +110,19 @@ html[lang="zh-CN"] .corrgrid thead th{transform:none;text-align:right}
 #tip .r{display:flex;justify-content:space-between;gap:14px;color:var(--ink-2)}
 #tip .r b{color:var(--ink);font-weight:600}
 footer{margin-top:40px;color:var(--ink-3);font-size:12px}
+/* live crypto strip + status pills */
+.livebar{display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;margin:10px 0 0;font-size:13px;color:var(--ink-2)}
+.livebar .ttl{display:inline-flex;align-items:center;gap:6px;font-weight:600;color:var(--ink)}
+.ldot{width:8px;height:8px;border-radius:50%;background:var(--flat);display:inline-block}
+.ldot.on{background:var(--accent);animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.35}}
+@media (prefers-reduced-motion:reduce){.ldot.on{animation:none}}
+.livebar .li{font-variant-numeric:tabular-nums;white-space:nowrap}
+.livebar .li b{color:var(--ink);font-weight:600}
+.livebar .src{color:var(--ink-3);font-size:12px}
+.livebar .btn{padding:2px 9px;font-size:12px}
+button.pill{cursor:pointer;font:inherit;font-size:13px}
+.tag{font-size:10.5px;color:var(--ink-3);margin-left:4px;white-space:nowrap}
 @media (max-width:640px){#float{height:420px}.timeline .date{min-width:0}}
 </style>
 </head>
@@ -119,7 +133,7 @@ footer{margin-top:40px;color:var(--ink-3);font-size:12px}
     <h1 data-i18n="title">Market Pulse</h1>
     <p class="sub" id="subtitle"></p>
   </div>
-  <span style="display:flex;gap:8px;flex-wrap:wrap"><span class="pill" id="demoBadge" hidden></span><span class="pill" id="regime"></span></span>
+  <span style="display:flex;gap:8px;flex-wrap:wrap"><button class="pill" id="newData" hidden></button><span class="pill" id="demoBadge" hidden></span><span class="pill" id="livePill" hidden></span><span class="pill" id="regime"></span></span>
 </header>
 
 <div class="bar" role="toolbar">
@@ -141,6 +155,7 @@ footer{margin-top:40px;color:var(--ink-3);font-size:12px}
 </div>
 
 <ul class="headlines" id="headlines"></ul>
+<div class="livebar" id="liveBar" hidden></div>
 <!--LOCAL_SECTIONS-->
 
 <h2 data-i18n="hTerrain">Market terrain</h2>
@@ -195,7 +210,8 @@ Dots mark each market; labels show σ and the actual % move. Drag to rotate, scr
 <h2 data-i18n="hAll">All markets</h2>
 <div class="wrap" id="perf"></div>
 
-<footer data-i18n="footer">Data: Yahoo Finance via yfinance (delayed, unofficial). σ uses each market's prior 60-day daily volatility.
+<footer data-i18n="footer">Data: Yahoo Finance via yfinance (delayed, unofficial), refreshed about every 30 minutes on weekdays.
+Crypto prices update live in your browser from the public Coinbase feed (Kraken as fallback). σ uses each market's prior 60-day daily volatility.
 "Where the money moved" reads prices, not actual fund flows. For research only, not investment advice.</footer>
 </main>
 <div id="tip"></div>
@@ -218,7 +234,8 @@ const I18N = {
   hTogether:"How markets move together",noteTogether:"Correlation of daily moves: +1 always together, −1 always opposite, 0 unrelated.",
   cShift:"Relationships that changed",cLead:"US → China, next day",cLeadSub:"US move on day t vs China on day t+1",
   corrSummary:"Show the full correlation grid",hAll:"All markets",
-  footer:`Data: Yahoo Finance via yfinance (delayed, unofficial). σ uses each market's prior 60-day daily volatility.
+  footer:`Data: Yahoo Finance via yfinance (delayed, unofficial), refreshed about every 30 minutes on weekdays. Crypto prices
+   update live in your browser from the public Coinbase feed (Kraken as fallback). σ uses each market's prior 60-day daily volatility.
    "Where the money moved" reads prices, not actual fund flows. For research only, not investment advice.`,
   asOf:"As of",latestP:p=>`Latest ${p}`,marketsAcross:(m,g)=>`${m} markets across ${g} groups`,latest:"Latest",
   regimeTitle:"stocks & crypto vs havens (gold, VIX, yen), in σ","Risk-on":"Risk-on","Risk-off":"Risk-off",Mixed:"Mixed",
@@ -230,7 +247,13 @@ const I18N = {
   flipped:"flipped direction",tighter:"tighter than usual",looser:"looser than usual",vs:"vs",dSuffix:"d",
   demoBadge:"Synthetic demo data",usYesterday:"US (yesterday)",corrRolling:n=>`${n}-day correlation`,now:"now",days:n=>`${n} days`,
   thMarket:"Market",thLast:"Last",thAsOf:"As of",
-  period_day:"day",period_week:"week",period_month:"month"},
+  period_day:"day",period_week:"week",period_month:"month",
+  notOpen:"not open yet",waiting:"no data yet today",liveTag:"live",updated:s=>`updated ${s}`,
+  intradayPill:"Intraday · quotes may be delayed",closePill:"Stock markets closed",status:"Status",
+  st_live:"trading now",st_closed:"closed for the day",st_pre:"not open yet",st_off:"no session today",st_unknown:"–",
+  liveTitle:"Live crypto",livePause:"Pause",liveResume:"Resume",liveConnecting:"connecting…",liveOffline:"live prices unavailable",
+  livePaused:"paused",liveAgo:s=>s<2?"just now":`${s}s ago`,liveVsClose:"vs previous UTC close",live24h:"24h",
+  newData:"New data · reload"},
  zh:{title:"市场脉搏 <span style=\"font-weight:400;color:var(--ink-3);font-size:15px\">Market Pulse</span>",period:"周期",day:"日",week:"周",month:"月",colors:"配色",west:"绿涨红跌",cnColors:"红涨绿跌",
   theme:"主题",auto:"自动",light:"浅色",dark:"深色",hTerrain:"市场地形图",
   noteTerrain:`由所有市场的涨跌构成的地形。<b>高度和颜色</b> = 波动强度（σ，即本次涨跌除以该市场的正常波动，
@@ -244,7 +267,8 @@ const I18N = {
   hTogether:"市场联动",noteTogether:"每日涨跌的相关系数：+1 总是同向，−1 总是反向，0 无关。",
   cShift:"关系发生变化",cLead:"美股 → 中国股市（次日）",cLeadSub:"美股第 t 天 对比 中国第 t+1 天",
   corrSummary:"显示完整相关性矩阵",hAll:"全部市场",
-  footer:`数据：Yahoo Finance（通过 yfinance，延迟、非官方）。σ 基于各市场此前 60 个交易日的日波动率。
+  footer:`数据：Yahoo Finance（通过 yfinance，延迟、非官方），工作日约每 30 分钟更新一次。加密货币价格在你的浏览器里
+   通过 Coinbase 公开行情实时更新（Kraken 备用）。σ 基于各市场此前 60 个交易日的日波动率。
    “资金流向”根据价格推断，并非真实资金流数据。仅供研究，不构成投资建议。`,
   asOf:"截至",latestP:p=>({day:"最新交易日",week:"最近一周",month:"最近一月"})[p],marketsAcross:(m,g)=>`${g} 个板块，共 ${m} 个市场`,latest:"最新",
   regimeTitle:"股票和加密货币 对比 避险资产（黄金、VIX、日元），单位 σ","Risk-on":"风险偏好上升","Risk-off":"避险",Mixed:"分化",
@@ -256,7 +280,13 @@ const I18N = {
   flipped:"方向反转",tighter:"联动比平时更紧密",looser:"联动比平时更松散",vs:"对比",dSuffix:"天",
   demoBadge:"模拟演示数据",usYesterday:"美股（前一日）",corrRolling:n=>`${n}日滚动相关系数`,now:"当前",days:n=>`${n} 天`,
   thMarket:"市场",thLast:"最新价",thAsOf:"日期",
-  period_day:"日",period_week:"周",period_month:"月"}};
+  period_day:"日",period_week:"周",period_month:"月",
+  notOpen:"未开盘",waiting:"暂无今日数据",liveTag:"盘中",updated:s=>`更新于 ${s}`,
+  intradayPill:"盘中 · 行情可能有延迟",closePill:"股市非交易时段",status:"状态",
+  st_live:"交易中",st_closed:"已收盘",st_pre:"未开盘",st_off:"今日休市",st_unknown:"–",
+  liveTitle:"加密货币实时",livePause:"暂停",liveResume:"继续",liveConnecting:"连接中…",liveOffline:"实时行情暂不可用",
+  livePaused:"已暂停",liveAgo:s=>s<2?"刚刚":`${s} 秒前`,liveVsClose:"相对前一日收盘（UTC）",live24h:"24 小时",
+  newData:"有新数据 · 点击刷新"}};
 const GROUP_ZH = {"Commodities":"大宗商品","US Stocks":"美股","China Stocks":"中国股市","FX":"外汇","Rates & Vol":"利率与波动率","Crypto":"加密货币"};
 let LANG = "en";
 try{ LANG = localStorage.getItem("mp-lang") || ((navigator.language||"").toLowerCase().startsWith("zh") ? "zh" : "en"); }catch(e){}
@@ -304,9 +334,25 @@ const cur = () => D.float.periods[state.period];
 const PERIOD_WORD = new Proxy({}, {get:(_,k)=>t("period_"+k)});
 function prettyDate(s){ return new Date(s+"T12:00:00").toLocaleDateString(LOCALE(),{weekday:"short",day:"numeric",month:"short",year:"numeric"}); }
 
+// ---------- intraday status (computed when the page was built; see market/sessions.py)
+const LIVE = D.live || {}, ST = LIVE.status || {};
+// "live" = this bar is still forming; "pre"/"waiting" = today's bar does not exist yet; null = nothing special
+function statusAt(name,k){ const s=ST[name]; if(!s) return null; const d=D.float.dates[k];
+  if(s.partial && d===s.bar_date) return "live";
+  if(d===s.session_date){ if(s.status==="pre") return "pre"; if(s.status==="live") return "waiting"; }
+  return null; }
+function closedText(name,k){ const s=statusAt(name,k); return s==="pre"?t("notOpen"):s==="waiting"?t("waiting"):t("closed"); }
+function builtText(){ if(!LIVE.built_at) return ""; const b=new Date(LIVE.built_at), now=new Date();
+  const time=b.toLocaleTimeString(LOCALE(),{hour:"2-digit",minute:"2-digit"});
+  return b.toDateString()===now.toDateString() ? time : b.toLocaleDateString(LOCALE(),{day:"numeric",month:"short"})+" "+time; }
+
 // ---------- header
 function renderHeader(){
-  $("#subtitle").textContent = `${t("asOf")} ${prettyDate(D.as_of)} · ${t("marketsAcross",assets.length,groupsPresent.length)}`;
+  $("#subtitle").textContent = `${t("asOf")} ${prettyDate(D.as_of)} · ${t("marketsAcross",assets.length,groupsPresent.length)}`+
+    (LIVE.built_at && !D.demo ? ` · ${t("updated",builtText())}` : "");
+  const lp=$("#livePill"); lp.hidden = D.demo || !Object.keys(ST).length;
+  lp.innerHTML = `<span class="dot" style="background:${LIVE.intraday?css("--accent"):css("--flat")}"></span>${LIVE.intraday?t("intradayPill"):t("closePill")}`;
+  $("#newData").textContent = t("newData");
   const r = D.regime[state.period];
   const col = r.label==="Risk-on"?upC():r.label==="Risk-off"?dnC():css("--flat");
   $("#regime").innerHTML = `<span class="dot" style="background:${col}"></span>${t("latestP",state.period)}: <b>${t(r.label)}</b> <span title="${t("regimeTitle")}">(${r.score>=0?"+":""}${r.score})</span>`;
@@ -458,7 +504,7 @@ function drawFloat(){
   ctx.textAlign="left"; ctx.lineJoin="round";
   for(const p of order){
     const hov=p.a.name===hoverName; if(!all && Math.abs(p.z||0)<1.2 && !hov) continue;
-    const name=NM(p.a.name), sub=p.z==null?t("closed"):fmtZ(p.z);
+    const name=NM(p.a.name), sub=p.z==null?closedText(p.a.name,i):fmtZ(p.z);
     ctx.font="600 12px system-ui,sans-serif"; const w1=ctx.measureText(name+" ").width;
     ctx.font="11px system-ui,sans-serif"; const w=w1+ctx.measureText(sub).width;
     const hit=bx=>placed.some(b=>!(bx.x>b.x+b.w||bx.x+bx.w<b.x||bx.y>b.y+b.h||bx.y+bx.h<b.y));
@@ -477,10 +523,11 @@ function floatHover(e){
   if(name!==hoverName){ hoverName=name; drawFloat(); }
   if(best){ const a=best.a, pf=D.performance[a.name]||{};
     const linked=links.filter(l=>l[0]===a.name||l[1]===a.name).map(l=>`${NM(l[0]===a.name?l[1]:l[0])} ${l[2]>0?"+":"−"}${Math.abs(l[2]).toFixed(2)}`);
-    const zn=ZONE_OF[a.name];
+    const zn=ZONE_OF[a.name], sa=statusAt(a.name,state.idx), st=ST[a.name];
+    const stRow = st && D.float.dates[state.idx]>=st.bar_date ? `<div class="r">${t("status")}<b>${t("st_"+st.status)}${sa==="live"?" · "+t("liveTag"):""}</b></div>` : "";
     showTip(`<div class="t">${NM(a.name)} <span style="color:var(--ink-3);font-weight:400">${zn?`<i class="dot" style="background:${zoneColor(zn)};width:8px;height:8px"></i> ${ZN(zn)}`:GN(a.group)}</span></div>
-      <div class="r">${t("heightS")}<b>${fmtZ(best.z)}</b></div>
-      <div class="r">${t("move")} (${PERIOD_WORD[state.period]})<b>${best.z==null?t("closed"):fmtMove(best.v,a.name)}</b></div>
+      <div class="r">${t("heightS")}<b>${best.z==null?closedText(a.name,state.idx):fmtZ(best.z)}</b></div>
+      <div class="r">${t("move")} (${PERIOD_WORD[state.period]})<b>${best.z==null?closedText(a.name,state.idx):fmtMove(best.v,a.name)}</b></div>${stRow}
       <div class="r">${t("lastPrice")}<b>${fmtNum(pf.last)}</b></div>
       ${linked.length?`<div style="margin-top:4px;color:var(--ink-3)">${t("movesWith")}: ${linked.slice(0,4).join(", ")}</div>`:""}`, e.clientX, e.clientY);
   } else hideTip();
@@ -541,8 +588,9 @@ function renderFlow(){
     for(const z of [-2,2]) svg+=`<line x1="${mid+z*sc}" y1="0" x2="${mid+z*sc}" y2="${H}" stroke="var(--grid)" stroke-dasharray="2 3"/>`;
     rows.forEach((r,k)=>{ const y=k*rowH+4, cy=y+rowH/2;
       svg+=`<g class="frow" data-n="${r.n}" data-z="${r.z}" data-v="${r.v}"><rect x="0" y="${y}" width="${W}" height="${rowH}" fill="transparent"/>`;
-      svg+=`<text x="0" y="${cy+4}" font-size="12.5" fill="var(--ink)">${NM(r.n)}</text>`;
-      if(r.z==null){ svg+=`<text x="${mid}" y="${cy+4}" font-size="11.5" fill="var(--ink-3)" text-anchor="middle">${t("closed")}</text></g>`; return; }
+      const lv=statusAt(r.n,i)==="live";
+      svg+=`<text x="0" y="${cy+4}" font-size="12.5" fill="var(--ink)">${NM(r.n)}${lv?`<tspan font-size="10" fill="var(--ink-3)"> ${t("liveTag")}</tspan>`:""}</text>`;
+      if(r.z==null){ svg+=`<text x="${mid}" y="${cy+4}" font-size="11.5" fill="var(--ink-3)" text-anchor="middle">${closedText(r.n,i)}</text></g>`; return; }
       const zc=Math.max(-3,Math.min(3,r.z)), w=Math.max(Math.abs(zc)*sc,2), x=zc>=0?mid:mid-w;
       svg+=`<rect x="${x}" y="${cy-7}" width="${w}" height="14" rx="3" fill="${moveColor(r.z)}"/>`;
       svg+=`<text x="${W}" y="${cy+4}" font-size="12" fill="var(--ink-2)" text-anchor="end" style="font-variant-numeric:tabular-nums">${fmtMove(r.v,r.n)}</text></g>`;
@@ -554,7 +602,8 @@ function renderFlow(){
   $("#flow").innerHTML=out.join("");
   document.querySelectorAll(".frow").forEach(el=>{
     el.addEventListener("mousemove",e=>{ const n=el.dataset.n, pf=D.performance[n]||{}, z=el.dataset.z==="null"?null:+el.dataset.z, v=el.dataset.v==="null"?null:+el.dataset.v;
-      showTip(`<div class="t">${NM(n)}</div><div class="r">${t("move")}<b>${z==null?t("closed"):fmtMove(v,n)}</b></div><div class="r">${t("unusual")}<b>${fmtZ(z)}</b></div><div class="r">1Y<b>${fmtMove(pf["1Y"],n)}</b></div>`,e.clientX,e.clientY); });
+      const ct=closedText(n,state.idx);
+      showTip(`<div class="t">${NM(n)}</div><div class="r">${t("move")}<b>${z==null?ct:fmtMove(v,n)}</b></div><div class="r">${t("unusual")}<b>${z==null?ct:fmtZ(z)}</b></div><div class="r">1Y<b>${fmtMove(pf["1Y"],n)}</b></div>`,e.clientX,e.clientY); });
     el.addEventListener("mouseleave",hideTip); });
 }
 
@@ -653,14 +702,97 @@ function renderPerf(){
   let h=`<table><thead><tr><th>${t("thMarket")}</th><th>${t("thLast")}</th>${cols.map(c=>`<th>${c}</th>`).join("")}<th>${t("thAsOf")}</th></tr></thead><tbody>`;
   for(const g of groupsPresent){ h+=`<tr><td colspan="${cols.length+3}" style="font-weight:600;color:var(--ink-2);padding-top:10px">${GN(g)}</td></tr>`;
     for(const a of assets.filter(x=>x.group===g)){ const p=D.performance[a.name]; if(!p) continue;
-      h+=`<tr><td>${NM(a.name)}</td><td>${fmtNum(p.last)}</td>${cols.map(c=>`<td style="${bg(p[c],c,a.name)}">${fmtMove(p[c],a.name)}</td>`).join("")}<td style="color:var(--ink-3)">${p.date}</td></tr>`; } }
+      h+=`<tr><td>${NM(a.name)}</td><td>${fmtNum(p.last)}</td>${cols.map(c=>`<td style="${bg(p[c],c,a.name)}">${fmtMove(p[c],a.name)}</td>`).join("")}<td style="color:var(--ink-3)">${p.date}${ST[a.name]&&ST[a.name].partial&&ST[a.name].bar_date===p.date?`<span class="tag">${t("liveTag")}</span>`:""}</td></tr>`; } }
   $("#perf").innerHTML=h+"</tbody></table>";
+}
+
+
+// ---------- live crypto prices (browser only; the page works the same without them)
+// Recomputes crypto moves from a live price exactly as the build does for the latest bar:
+// move = ln(price / reference) and sigma = move / (prior 60-day vol × √bars), per period.
+const LC = LIVE.crypto || [], PRODUCTS = LC.map(c=>c.product);
+const LIVE_OK = !D.demo && LC.length>0 && typeof WebSocket!=="undefined";
+const LS = {on:true, ws:null, src:0, px:{}, last:0, tries:0, timer:null, dirty:false, status:"idle", srcName:""};
+try{ if(localStorage.getItem("mp-live")==="off") LS.on=false; }catch(e){}
+const SOURCES = [
+  {name:"Coinbase", url:"wss://ws-feed.exchange.coinbase.com",
+   sub:pr=>({type:"subscribe",product_ids:pr,channels:["ticker"]}),
+   parse:m=>(m && m.type==="ticker" && m.product_id && m.price!=null)
+     ? [{product:m.product_id, p:+m.price, chg24:m.open_24h?(+m.price/+m.open_24h-1)*100:null}] : []},
+  {name:"Kraken", url:"wss://ws.kraken.com/v2",
+   sub:pr=>({method:"subscribe",params:{channel:"ticker",symbol:pr.map(x=>x.replace("-","/"))}}),
+   parse:m=>(m && m.channel==="ticker" && Array.isArray(m.data))
+     ? m.data.filter(d=>d && d.symbol && d.last!=null).map(d=>({product:String(d.symbol).replace("/","-"), p:+d.last, chg24:d.change_pct!=null?+d.change_pct:null})) : []},
+];
+const utcToday = () => new Date().toISOString().slice(0,10);
+function liveConnect(){
+  if(!LIVE_OK || !LS.on || document.hidden || LS.ws) return;
+  const S=SOURCES[LS.src]; let got=false, ws;
+  try{ ws=new WebSocket(S.url); }catch(e){ LS.src=(LS.src+1)%SOURCES.length; return liveRetry(); }
+  LS.ws=ws; if(LS.status!=="on") LS.status="connecting"; renderLiveBar();
+  const guard=setTimeout(()=>{ if(!got){ try{ws.close();}catch(e){} } },10000);   // no prices in 10 s: try the other feed
+  ws.onopen=()=>{ try{ ws.send(JSON.stringify(S.sub(PRODUCTS))); }catch(e){} };
+  ws.onmessage=e=>{ let m; try{ m=JSON.parse(e.data); }catch(_){ return; }
+    const ticks=S.parse(m).filter(k=>PRODUCTS.includes(k.product) && isFinite(k.p) && k.p>0); if(!ticks.length) return;
+    if(!got){ got=true; LS.tries=0; clearTimeout(guard); }
+    for(const k of ticks) LS.px[k.product]={p:k.p, chg24:isFinite(k.chg24)?k.chg24:null, t:Date.now()};
+    LS.last=Date.now(); LS.status="on"; LS.srcName=S.name; LS.dirty=true; };
+  ws.onerror=()=>{ try{ws.close();}catch(e){} };
+  ws.onclose=()=>{ clearTimeout(guard); if(LS.ws!==ws) return; LS.ws=null;
+    if(!got) LS.src=(LS.src+1)%SOURCES.length; liveRetry(); };
+}
+function liveRetry(){ if(!LS.on || document.hidden) return; LS.tries++;
+  if(LS.tries>=4 && LS.status!=="on") LS.status="offline"; renderLiveBar();
+  clearTimeout(LS.timer); LS.timer=setTimeout(liveConnect, Math.min(60000, 1500*Math.pow(2,Math.min(LS.tries,5)))); }
+function liveStop(){ clearTimeout(LS.timer); const w=LS.ws; LS.ws=null; if(w){ try{w.close();}catch(e){} } }
+// write live prices into the page data, only for the UTC day whose bar is still forming
+function applyLive(){
+  const today=utcToday(); let touched=false;
+  for(const c of LC){ const q=LS.px[c.product]; if(!q || c.bar_date!==today || c.idx==null || !c.vol) continue;
+    for(const per of Object.keys(c.refs)){ const S=D.float.periods[per] && D.float.periods[per][c.name]; if(!S) continue;
+      const raw=Math.log(q.p/c.refs[per]); S.z[c.idx]=+(raw/(c.vol*Math.sqrt(c.n[per]))).toFixed(3); S.v[c.idx]=+((q.p/c.refs[per]-1)*100).toFixed(3); }
+    const pf=D.performance[c.name]; if(pf){ pf.last=q.p; for(const [k,r] of Object.entries(c.perf_refs||{})) if(r) pf[k]=+((q.p/r-1)*100).toFixed(3); }
+    touched=true; }
+  return touched;
+}
+function renderLiveBar(){
+  const el=$("#liveBar"); if(!LIVE_OK){ el.hidden=true; return; } el.hidden=false;
+  const today=utcToday(), items=LC.map(c=>{ const q=LS.px[c.product], sym=c.product.split("-")[0];
+    if(!q) return `<span class="li"><b>${sym}</b> –</span>`;
+    let chg=null, z=null, lab="";
+    if(c.bar_date===today && c.refs.day){ chg=(q.p/c.refs.day-1)*100; if(c.vol) z=Math.log(q.p/c.refs.day)/c.vol; }
+    else if(q.chg24!=null){ chg=q.chg24; lab=" "+t("live24h"); }
+    const cs=chg==null?"":` ${chg>=0?"+":"−"}${Math.abs(chg).toFixed(2)}%${lab}`, zs=z==null?"":` (${fmtZ(z)})`;
+    return `<span class="li"><b>${sym}</b> ${fmtNum(q.p)}${cs}${zs}</span>`; }).join("");
+  const age=LS.last?Math.round((Date.now()-LS.last)/1000):null;
+  const stat = !LS.on ? t("livePaused") : LS.status==="on" ? `${LS.srcName} · ${t("liveAgo",age)}` : LS.status==="offline" ? t("liveOffline") : t("liveConnecting");
+  el.innerHTML=`<span class="ttl"><i class="ldot${LS.on&&LS.status==="on"&&age<30?" on":""}"></i>${t("liveTitle")}</span>${items}
+    <span class="src" title="${t("liveVsClose")}">${stat}</span><button class="btn" id="liveBtn">${LS.on?t("livePause"):t("liveResume")}</button>`;
+  $("#liveBtn").onclick=()=>{ LS.on=!LS.on; try{localStorage.setItem("mp-live",LS.on?"on":"off");}catch(e){}
+    if(LS.on){ LS.tries=0; LS.status="connecting"; liveConnect(); } else liveStop(); renderLiveBar(); };
+}
+function liveInit(){
+  if(!LIVE_OK) return;
+  renderLiveBar(); liveConnect();
+  document.addEventListener("visibilitychange",()=>{ if(document.hidden) liveStop(); else { LS.tries=0; liveConnect(); } });
+  setInterval(()=>{ if(!document.hidden) renderLiveBar(); },1000);
+  // charts are heavier: redraw at most every 5 s, only when the forming day is on screen
+  setInterval(()=>{ if(!LS.dirty || document.hidden) return; LS.dirty=false;
+    if(applyLive() && LC.some(c=>c.idx===state.idx) && !drag && !timer){ drawFloat(); renderFlow(); }
+    renderPerf(); },5000);
+}
+// a newer build is published every ~30 minutes: offer a reload (only on the published site)
+function newDataInit(){
+  if(D.demo || !/^https?:$/.test(location.protocol) || !LIVE.built_at) return;
+  const check=()=>fetch("summary.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
+    if(j && j.built_at && j.built_at>LIVE.built_at){ const b=$("#newData"); b.hidden=false; b.onclick=()=>location.reload(); } }).catch(()=>{});
+  setInterval(()=>{ if(!document.hidden) check(); },5*60*1000);
 }
 
 // ---------- controls
 function seg(id,key,after){ $(id).querySelectorAll("button").forEach(b=>{ b.setAttribute("aria-pressed",String(b.dataset.v===String(state[key])));
   b.onclick=()=>{ state[key]=isNaN(+b.dataset.v)?b.dataset.v:+b.dataset.v; $(id).querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); after(); }; }); }
-function renderAll(){ (window.LOCAL_RENDER||[]).forEach(f=>{try{f()}catch(e){console.error(e)}}); applyStatic(); renderHeader(); renderFloatLegend(); drawFloat(); renderFlow(); renderTrends(); renderRelations(); renderPerf(); }
+function renderAll(){ (window.LOCAL_RENDER||[]).forEach(f=>{try{f()}catch(e){console.error(e)}}); applyStatic(); renderHeader(); renderFloatLegend(); drawFloat(); renderFlow(); renderTrends(); renderRelations(); renderPerf(); renderLiveBar(); }
 seg("#periodSeg","period",()=>{ renderHeader(); drawFloat(); renderFlow(); });
 $("#langSeg").querySelectorAll("button").forEach(b=>b.onclick=()=>{ LANG=b.dataset.v; try{localStorage.setItem("mp-lang",LANG);}catch(e){}
   renderAll(); $("#dateLbl").textContent=prettyDate(D.float.dates[state.idx]); });
@@ -672,7 +804,7 @@ seg("#themeSeg","theme",()=>{ if(state.theme==="auto") delete document.documentE
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change",renderAll);
 let rt=null; addEventListener("resize",()=>{ resize(); clearTimeout(rt); rt=setTimeout(()=>{renderTrends(); renderRelations();},150); });
 if(innerWidth<640) $("#tLabels").checked=false;   // phones: zone names + big movers only
-setIdx(state.idx); renderAll(); resize(); spin();
+setIdx(state.idx); renderAll(); resize(); spin(); liveInit(); newDataInit();
 </script>
 <!--LOCAL_SCRIPTS-->
 </body>

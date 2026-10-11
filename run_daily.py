@@ -10,6 +10,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import datetime as dt
 import webbrowser
 from pathlib import Path
 
@@ -47,7 +48,9 @@ def main() -> None:
         print(f"Downloading {len(assets)} assets...")
         prices = fetch_prices(assets, cfg.get("lookback_days", 750))
 
-    res = run_analysis(prices, cfg)
+    # live download: bars of markets still trading are flagged as unfinished (see market/sessions.py)
+    now = None if (args.demo or args.cache) else dt.datetime.now(dt.timezone.utc)
+    res = run_analysis(prices, cfg, now=now)
     res["demo"] = bool(args.demo)
     if local_extend:
         try:

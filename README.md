@@ -10,7 +10,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
 
-[**▶ Live page**](https://HuangCixin.github.io/market-pulse/) (real data, updated every weekday) · [Demo](https://HuangCixin.github.io/market-pulse/demo.html) (synthetic data)
+[**▶ Live page**](https://HuangCixin.github.io/market-pulse/) (real data, refreshed every 30 minutes on weekdays, live crypto prices) · [Demo](https://HuangCixin.github.io/market-pulse/demo.html) (synthetic data)
 
 ![Market terrain](docs/images/terrain-en.png)
 
@@ -28,6 +28,7 @@ shows, at a glance:
   spillover from Wall Street to Shanghai and Hong Kong.
 
 The page works offline, has no external dependencies, and switches between **English and 中文** with one click.
+When it is online, Bitcoin, Ethereum and Solana prices also update live from public exchange feeds.
 
 ## Markets covered
 
@@ -95,10 +96,18 @@ market group has a complete day.
 ### Run it every day automatically
 
 **On GitHub (already set up):** the [`Daily update`](.github/workflows/pages.yml) workflow rebuilds the page
-with real data every weekday at 22:30 UTC (00:30 Paris, 06:30 Beijing) and publishes it to GitHub Pages.
-If a download fails, the previous day's page stays online. You can also start it by hand under
-**Actions → Daily update → Run workflow**. GitHub pauses scheduled workflows in public repositories after
-60 days without any commits; one click on **Enable workflow** in the Actions tab turns it back on.
+with real data and publishes it to GitHub Pages:
+
+- weekdays every 30 minutes, 00:07–21:37 UTC (from the Asian open to the US close), as an intraday page;
+- weekdays at 22:37 UTC, after the US close, as the day's closing page;
+- weekends every 3 hours, when only crypto trades.
+
+Markets that are still trading are tagged **live** on the page, and their unfinished day is kept out of the
+correlations (see [Intraday updates](docs/METHODOLOGY.md#8-intraday-updates-and-live-prices)). Crypto prices
+also update live in the browser. If a download fails, the previous page stays online. You can start a build by
+hand under **Actions → Daily update → Run workflow**. GitHub pauses scheduled workflows in public repositories
+after 60 days without activity, so [`Keep schedules alive`](.github/workflows/keepalive.yml) makes an empty
+commit once a month when the repository has been quiet for 30 days.
 
 **On your own computer:**
 
@@ -132,6 +141,8 @@ The key ideas, in short (full detail in [docs/METHODOLOGY.md](docs/METHODOLOGY.m
 - **Respect calendars.** Holidays are never filled with fake zero-return days. For correlations every
   market is sampled on weekdays, so crypto's Monday move covers Friday → Monday just like stocks.
 - **Time zones matter.** Asia closes before New York opens, so the US → China link is measured with a one-day lag.
+- **Unfinished days are shown, not counted.** During the trading day a market's daily bar is still changing.
+  It appears on the page, tagged live, but stays out of correlations and the US → China table.
 - **Zones by asset class.** Markets sit in fixed, colored zones defined in `config.yaml`, so each one is always in the same place.
 
 > **Note on the terrain:** the dots are the data. The surface between dots is a smooth blend added so the
@@ -168,7 +179,10 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 - **Data source.** Prices come from Yahoo Finance through the unofficial `yfinance` library. They are
   delayed, occasionally missing, and meant for personal use. This repository contains code only, no market data.
 - **"Money moved" is inferred from prices**, not from actual fund-flow data.
-- **The layout can shift** over time as correlations change.
+- **Trading hours are approximate.** Sessions come from `config.yaml` without exchange holiday calendars, so
+  on a holiday a market shows "no data yet today" instead of "closed". Scheduled builds can start a few minutes late.
+- **Live crypto prices** come from the public Coinbase feed (Kraken as fallback). Viewers' browsers connect to
+  those exchanges directly; the toggle next to the prices pauses the feed.
 
 ## Disclaimer
 

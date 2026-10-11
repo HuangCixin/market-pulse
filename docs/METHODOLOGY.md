@@ -107,9 +107,33 @@ These are **price-based reads**, not fund-flow data.
 
   Above +0.5 reads as risk-on, below −0.5 as risk-off, otherwise mixed.
 
-## 8. Known limitations
+## 8. Intraday updates and live prices
+
+The published page is rebuilt every 30 minutes on weekdays, so some markets are still trading when it is built.
+
+- **Sessions.** Each market has trading hours in `config.yaml` (`sessions:`, in local exchange time). Futures use an
+  overnight session that opens the evening before its trading date (17:00 Chicago). FX follows the London
+  calendar day, crypto the UTC day. Exchange holidays are not modelled.
+- **Unfinished bars.** If a market is trading when the page is built and its latest daily bar belongs to the
+  current session, that bar is *unfinished*. It is shown in the terrain, the bars and the table, tagged
+  **live**. Its σ is the move so far divided by the usual full-day move. Unfinished bars are removed before
+  correlations, rolling correlations and the US → China table are computed, as if that day had not happened
+  yet. They never enter the volatility used for σ either, because σ uses the volatility known before the day.
+- **Before the open.** A market that has not opened yet shows "not open yet" instead of "closed". A market that
+  should be trading but has no bar for the day (a holiday, or data not yet published) shows "no data yet today".
+- **Page status.** The header says when the page was built, in the viewer's time zone, and whether stock
+  markets (US, China, Hong Kong) were trading at that moment. When a newer build is published, the page offers
+  a reload.
+- **Live crypto.** In the browser, Bitcoin, Ethereum and Solana prices stream from the public Coinbase feed
+  (Kraken as fallback). For the UTC day whose bar is still forming, each live price *p* updates the moves
+  exactly as the build does: move = ln(*p* / reference) for the period, σ = move ÷ (prior 60-day vol × √bars).
+  The terrain, bars and table refresh at most every 5 seconds. If the page is older than the current UTC day,
+  the charts stay as built and the price strip shows the feed's 24-hour change instead. Headlines and the
+  risk-on/off reading are as of the build.
+
+## 9. Known limitations
 
 - Yahoo Finance data is delayed and unofficial. A ticker can fail for a day, and the report then skips it.
 - Futures (gold, oil, copper) roll between contracts. With `auto_adjust` the effect is small but not zero.
 - σ assumes recent volatility describes "normal". After a calm stretch, a moderate move can show a large σ.
-- The layout shifts slowly as correlations evolve, so compare positions across months with care.
+- Trading sessions are approximate (no holiday calendars), and scheduled builds can start a few minutes late.

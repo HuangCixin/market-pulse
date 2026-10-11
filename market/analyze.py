@@ -4,10 +4,13 @@ Everything here returns plain numbers; market/report.py turns them into the page
 """
 from __future__ import annotations
 
+import datetime as dt
 import math
 
 import numpy as np
 import pandas as pd
+
+from market.sessions import final_prices, market_status
 
 PERIODS = {"day": 1, "week": 7, "month": 30}  # calendar days per period
 
@@ -180,6 +183,19 @@ def float_frames(prices: pd.DataFrame, kinds: dict[str, str], n_dates: int = 120
 
 
 # ---------------------------------------------------------------- performance
+def _perf_refs(s: pd.Series) -> dict:
+    """Reference prices for the performance columns, relative to the latest bar of `s` (no NaNs)."""
+    last_date = s.index[-1]
+
+    def ref(days):
+        past = s[s.index <= last_date - pd.Timedelta(days=days)]
+        return past.iloc[-1] if len(past) else np.nan
+
+    ytd = s[s.index < pd.Timestamp(last_date.year, 1, 1)]
+    return {"1D": s.iloc[-2], "1W": ref(7), "1M": ref(30), "3M": ref(91),
+            "1Y": ref(365), "YTD": ytd.iloc[-1] if len(ytd) else np.nan}
+
+
 def performance(prices: pd.DataFrame, kinds: dict[str, str]) -> dict:
     rows = {}
     for col in prices.columns:
@@ -188,14 +204,7 @@ def performance(prices: pd.DataFrame, kinds: dict[str, str]) -> dict:
             continue
         kind = kinds.get(col, "price")
         last, last_date = s.iloc[-1], s.index[-1]
-
-        def ref(days):
-            past = s[s.index <= last_date - pd.Timedelta(days=days)]
-            return past.iloc[-1] if len(past) else np.nan
-
-        ytd = s[s.index < pd.Timestamp(last_date.year, 1, 1)]
-        refs = {"1D": s.iloc[-2], "1W": ref(7), "1M": ref(30), "3M": ref(91),
-                "1Y": ref(365), "YTD": ytd.iloc[-1] if len(ytd) else np.nan}
+        refs = _perf_refs(s)
         row = {"last": round(float(last), 4), "date": last_date.date().isoformat()}
         for k, r in refs.items():
             if pd.isna(r):
@@ -230,8 +239,43 @@ def regime(frames: dict, groups: dict[str, str], period: str = "day") -> dict:
     return {"score": round(score, 2), "label": label}
 
 
+# ---------------------------------------------------------------- live crypto (browser updates)
+def live_crypto(prices: pd.DataFrame, assets: list[dict], frame_dates: list[str]) -> list[dict]:
+    """What the page needs to recompute crypto moves from a live price, exactly as float_frames and
+    performance() do for the latest bar: the reference price per period, the number of bars the
+    period spans, and the volatility used for sigma. Only price-kind assets in the Crypto group.
+    """
+    out = []
+    for a in assets:
+        if a.get("group") != "Crypto" or a.get("kind", "price") != "price" or a["name"] not in prices:
+            continue
+        s = prices[a["name"]].dropna()
+        if len(s) < 25:
+            continue
+        mv = np.log(s).diff()
+        vol = mv.rolling(60, min_periods=20).std().shift(1).iloc[-1]
+        d = s.index[-1]
+        refs, n = {"day": float(s.iloc[-2])}, {"day": 1}
+        for p, days in PERIODS.items():
+            if p == "day":
+                continue
+            base = s[s.index <= d - pd.Timedelta(days=days)]
+            if base.empty:
+                continue
+            refs[p] = float(base.iloc[-1])
+            n[p] = int(max(1, ((s.index > base.index[-1]) & (s.index <= d)).sum()))
+        bar = d.date().isoformat()
+        out.append({"name": a["name"], "product": a["ticker"], "bar_date": bar, "last": float(s.iloc[-1]),
+                    "idx": frame_dates.index(bar) if bar in frame_dates else None,
+                    "vol": None if pd.isna(vol) else float(vol), "refs": refs, "n": n,
+                    "perf_refs": {k: (None if pd.isna(v) else float(v)) for k, v in _perf_refs(s).items()}})
+    return out
+
+
 # ---------------------------------------------------------------- main entry
-def run_analysis(prices: pd.DataFrame, cfg: dict) -> dict:
+def run_analysis(prices: pd.DataFrame, cfg: dict, now: dt.datetime | None = None) -> dict:
+    """`now` (timezone-aware) turns on intraday handling: bars still forming at `now` are shown but
+    kept out of correlations and the lead/lag table. None = treat every bar as final (demo, cache)."""
     assets = [a for a in cfg["assets"] if a["name"] in prices.columns]
     kinds = {a["name"]: a.get("kind", "price") for a in assets}
     regions = {a["name"]: a.get("region", "Global") for a in assets}
@@ -241,7 +285,8 @@ def run_analysis(prices: pd.DataFrame, cfg: dict) -> dict:
     prices = prices[[a["name"] for a in assets]]
 
     positions, zones = zone_layout(assets, cfg.get("zones"))
-    cm = corr_moves(prices, kinds)
+    status = market_status(prices, assets, cfg.get("sessions") or {}, now) if now else {}
+    cm = corr_moves(final_prices(prices, status), kinds)      # finished days only
     corr_s, corr_l = correlation(cm, w_short), correlation(cm, w_long)
     frames = float_frames(prices, kinds, cfg.get("float_days", 120))
     pairs = [p for p in cfg.get("key_pairs", []) if p[0] in cm and p[1] in cm]
@@ -273,4 +318,10 @@ def run_analysis(prices: pd.DataFrame, cfg: dict) -> dict:
         "leadlag": us_to_china_leadlag(cm, regions, w_short),
         "rolling": rolling, "w_roll": w_roll,
         "lines": lines,
+        "live": {
+            "built_at": (now or dt.datetime.now(dt.timezone.utc)).astimezone(dt.timezone.utc).isoformat(timespec="seconds"),
+            "intraday": any(st["partial"] for n, st in status.items() if groups.get(n) in ("US Stocks", "China Stocks")),
+            "status": status,
+            "crypto": live_crypto(prices, assets, frames["dates"]) if now and (cfg.get("live") or {}).get("crypto") else [],
+        },
     }

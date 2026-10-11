@@ -36,11 +36,15 @@ def headlines(res: dict, lang: str = "en") -> list[str]:
     lines = []
 
     r = res["regime"]["day"]
+    live = res.get("live") or {}
+    hhmm = (live.get("built_at") or "")[11:16]
     if zh:
-        lines.append(f"{res['as_of']} 市场整体：<b>{REGIME_ZH.get(r['label'], r['label'])}</b>"
+        when = f"（盘中，截至 UTC {hhmm}）" if live.get("intraday") else ""
+        lines.append(f"{res['as_of']}{when} 市场整体：<b>{REGIME_ZH.get(r['label'], r['label'])}</b>"
                      f"（得分 {r['score']:+.2f}：股票和加密货币 对比 黄金、VIX 和日元）。")
     else:
-        lines.append(f"{res['as_of']} reads <b>{r['label'].lower()}</b> (score {r['score']:+.2f}: "
+        when = f" (intraday, as of {hhmm} UTC)" if live.get("intraday") else ""
+        lines.append(f"{res['as_of']}{when} reads <b>{r['label'].lower()}</b> (score {r['score']:+.2f}: "
                      "stocks and crypto versus gold, VIX and the yen).")
 
     movers = [(n, day[n]["z"][k], day[n]["v"][k]) for n in day if day[n]["z"][k] is not None]
@@ -94,8 +98,12 @@ def write_report(res: dict, out_dir: Path) -> Path:
 
     # summary.json: compact, for Claude Code or other scripts
     day = res["float"]["periods"]["day"]
+    live = res.get("live") or {}
     summary = {
         "as_of": res["as_of"],
+        "built_at": live.get("built_at"),
+        "intraday": live.get("intraday", False),
+        "unfinished_bars": sorted(n for n, st in (live.get("status") or {}).items() if st.get("partial")),
         "regime": res["regime"],
         "headlines": [h.replace("<b>", "").replace("</b>", "") for h in res["headlines"]],
         "headlines_zh": [h.replace("<b>", "").replace("</b>", "") for h in res["headlines_zh"]],
