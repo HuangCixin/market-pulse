@@ -7,3 +7,4 @@ site/
 .pytest_cache/
 *.pyc
 .DS_Store
+local/

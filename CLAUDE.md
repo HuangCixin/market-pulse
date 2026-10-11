@@ -22,6 +22,9 @@ performance, correlation shifts, US→China lead/lag), `performance.csv`.
 - `market/report.py` — headlines, embeds the dict into the template, writes summary files.
 - `market/template.html` — the page: vanilla JS + canvas/SVG. Data arrives as `const D = {...}`.
 - `run_daily.py` — CLI.
+- Optional `local/` folder (git-ignored, never published): if `local/extension.py` exists, run_daily calls
+  `extend(res, cfg, args)`, which may set `local_sections_html` / `local_scripts_html` / `local_summary`.
+  Keep this hook generic: no local content or logic belongs in the public code.
 
 ## Page sections (template.html)
 1. **Market terrain (3D canvas)**: a filled, shaded surface. Markets sit in fixed, colored zones by asset class

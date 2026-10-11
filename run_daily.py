@@ -19,6 +19,11 @@ from market.analyze import run_analysis
 from market.fetch import demo_prices, fetch_prices, load_cache
 from market.report import write_report
 
+try:  # optional local extension: a local/ folder next to this file, excluded from git
+    from local.extension import extend as local_extend
+except ImportError:
+    local_extend = None
+
 ROOT = Path(__file__).resolve().parent
 
 
@@ -44,6 +49,11 @@ def main() -> None:
 
     res = run_analysis(prices, cfg)
     res["demo"] = bool(args.demo)
+    if local_extend:
+        try:
+            local_extend(res, cfg, args)
+        except Exception as e:  # noqa: BLE001 - a local add-on must never break the main report
+            print(f"! local extension failed: {e}")
     out_dir = ROOT / "reports" / (res["as_of"] + ("-demo" if args.demo else ""))
     path = write_report(res, out_dir)
 

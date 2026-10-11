@@ -141,6 +141,7 @@ footer{margin-top:40px;color:var(--ink-3);font-size:12px}
 </div>
 
 <ul class="headlines" id="headlines"></ul>
+<!--LOCAL_SECTIONS-->
 
 <h2 data-i18n="hTerrain">Market terrain</h2>
 <p class="note" data-i18n="noteTerrain">A terrain built from every market's move. <b>Height and color</b> = how strongly it moved in σ
@@ -659,7 +660,7 @@ function renderPerf(){
 // ---------- controls
 function seg(id,key,after){ $(id).querySelectorAll("button").forEach(b=>{ b.setAttribute("aria-pressed",String(b.dataset.v===String(state[key])));
   b.onclick=()=>{ state[key]=isNaN(+b.dataset.v)?b.dataset.v:+b.dataset.v; $(id).querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); after(); }; }); }
-function renderAll(){ applyStatic(); renderHeader(); renderFloatLegend(); drawFloat(); renderFlow(); renderTrends(); renderRelations(); renderPerf(); }
+function renderAll(){ (window.LOCAL_RENDER||[]).forEach(f=>{try{f()}catch(e){console.error(e)}}); applyStatic(); renderHeader(); renderFloatLegend(); drawFloat(); renderFlow(); renderTrends(); renderRelations(); renderPerf(); }
 seg("#periodSeg","period",()=>{ renderHeader(); drawFloat(); renderFlow(); });
 $("#langSeg").querySelectorAll("button").forEach(b=>b.onclick=()=>{ LANG=b.dataset.v; try{localStorage.setItem("mp-lang",LANG);}catch(e){}
   renderAll(); $("#dateLbl").textContent=prettyDate(D.float.dates[state.idx]); });
@@ -673,5 +674,6 @@ let rt=null; addEventListener("resize",()=>{ resize(); clearTimeout(rt); rt=setT
 if(innerWidth<640) $("#tLabels").checked=false;   // phones: zone names + big movers only
 setIdx(state.idx); renderAll(); resize(); spin();
 </script>
+<!--LOCAL_SCRIPTS-->
 </body>
 </html>

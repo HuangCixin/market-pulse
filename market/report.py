@@ -83,8 +83,12 @@ def write_report(res: dict, out_dir: Path) -> Path:
     out_dir.mkdir(parents=True, exist_ok=True)
     res["headlines"] = headlines(res)
     res["headlines_zh"] = headlines(res, "zh")
-    payload = json.dumps(res, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
+    page_data = {k: v for k, v in res.items() if not k.startswith("local_")}
+    payload = json.dumps(page_data, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
     html = TEMPLATE.read_text(encoding="utf-8").replace("/*__DATA__*/null", payload, 1)
+    # optional local extension (local/ folder, never committed): extra sections + scripts
+    html = html.replace("<!--LOCAL_SECTIONS-->", res.get("local_sections_html", ""), 1)
+    html = html.replace("<!--LOCAL_SCRIPTS-->", res.get("local_scripts_html", ""), 1)
     page = out_dir / "report.html"
     page.write_text(html, encoding="utf-8")
 
@@ -99,6 +103,7 @@ def write_report(res: dict, out_dir: Path) -> Path:
         "performance": res["performance"],
         "correlation_shifts": res["shifts"],
         "us_to_china_leadlag": res["leadlag"],
+        **res.get("local_summary", {}),
     }
     (out_dir / "summary.json").write_text(json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8")
 
