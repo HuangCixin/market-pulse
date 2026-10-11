@@ -119,7 +119,7 @@ footer{margin-top:40px;color:var(--ink-3);font-size:12px}
     <h1 data-i18n="title">Market Pulse</h1>
     <p class="sub" id="subtitle"></p>
   </div>
-  <span class="pill" id="regime"></span>
+  <span style="display:flex;gap:8px;flex-wrap:wrap"><span class="pill" id="demoBadge" hidden></span><span class="pill" id="regime"></span></span>
 </header>
 
 <div class="bar" role="toolbar">
@@ -227,7 +227,7 @@ const I18N = {
   avg:"avg",inflow:"inflow ↑",outflow:"outflow ↓",flat:"flat",pctChange:"% change",bp:"bp",
   Volatility:"Volatility",noData:"No data",notEnough:"Not enough data.",
   flipped:"flipped direction",tighter:"tighter than usual",looser:"looser than usual",vs:"vs",dSuffix:"d",
-  usYesterday:"US (yesterday)",corrRolling:n=>`${n}-day correlation`,now:"now",days:n=>`${n} days`,
+  demoBadge:"Synthetic demo data",usYesterday:"US (yesterday)",corrRolling:n=>`${n}-day correlation`,now:"now",days:n=>`${n} days`,
   thMarket:"Market",thLast:"Last",thAsOf:"As of",
   period_day:"day",period_week:"week",period_month:"month"},
  zh:{title:"市场脉搏 <span style=\"font-weight:400;color:var(--ink-3);font-size:15px\">Market Pulse</span>",period:"周期",day:"日",week:"周",month:"月",colors:"配色",west:"绿涨红跌",cnColors:"红涨绿跌",
@@ -253,7 +253,7 @@ const I18N = {
   avg:"平均",inflow:"流入 ↑",outflow:"流出 ↓",flat:"持平",pctChange:"涨跌幅 %",bp:"基点",
   Volatility:"波动率",noData:"无数据",notEnough:"数据不足。",
   flipped:"方向反转",tighter:"联动比平时更紧密",looser:"联动比平时更松散",vs:"对比",dSuffix:"天",
-  usYesterday:"美股（前一日）",corrRolling:n=>`${n}日滚动相关系数`,now:"当前",days:n=>`${n} 天`,
+  demoBadge:"模拟演示数据",usYesterday:"美股（前一日）",corrRolling:n=>`${n}日滚动相关系数`,now:"当前",days:n=>`${n} 天`,
   thMarket:"市场",thLast:"最新价",thAsOf:"日期",
   period_day:"日",period_week:"周",period_month:"月"}};
 const GROUP_ZH = {"Commodities":"大宗商品","US Stocks":"美股","China Stocks":"中国股市","FX":"外汇","Rates & Vol":"利率与波动率","Crypto":"加密货币"};
@@ -309,6 +309,7 @@ function renderHeader(){
   const r = D.regime[state.period];
   const col = r.label==="Risk-on"?upC():r.label==="Risk-off"?dnC():css("--flat");
   $("#regime").innerHTML = `<span class="dot" style="background:${col}"></span>${t("latestP",state.period)}: <b>${t(r.label)}</b> <span title="${t("regimeTitle")}">(${r.score>=0?"+":""}${r.score})</span>`;
+  const db=$("#demoBadge"); db.hidden=!D.demo; db.textContent=t("demoBadge");
   $("#headlines").innerHTML = (LANG==="zh" && D.headlines_zh ? D.headlines_zh : D.headlines).map(h=>`<li>${h}</li>`).join("");
 }
 

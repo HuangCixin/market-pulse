@@ -10,7 +10,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
 
-[**▶ 在线演示**](https://HuangCixin.github.io/market-pulse/)（模拟数据）
+[**▶ 在线页面**](https://HuangCixin.github.io/market-pulse/)（真实数据，每个工作日更新）· [演示](https://HuangCixin.github.io/market-pulse/demo.html)（模拟数据）
 
 ![市场地形图](docs/images/terrain-zh.png)
 
@@ -89,6 +89,13 @@ performance.csv   表现数据表
 **何时运行：** 美股收盘之后（巴黎时间 22:00，北京时间 04:00），此时所有板块都有完整的一天数据。
 
 ### 每天自动运行
+
+**在 GitHub 上（已配置好）：** [`Daily update`](.github/workflows/pages.yml) 工作流会在每个工作日
+UTC 22:30（巴黎 00:30，北京 06:30）用真实数据重新生成页面，并发布到 GitHub Pages。
+如果某天数据下载失败，前一天的页面会继续保留。也可以在 **Actions → Daily update → Run workflow** 手动运行。
+公开仓库如果连续 60 天没有任何提交，GitHub 会暂停定时任务，在 Actions 页面点一下 **Enable workflow** 即可恢复。
+
+**在你自己的电脑上：**
 
 macOS / Linux（`crontab -e`，工作日 23:00）：
 

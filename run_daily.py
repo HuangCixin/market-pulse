@@ -43,6 +43,7 @@ def main() -> None:
         prices = fetch_prices(assets, cfg.get("lookback_days", 750))
 
     res = run_analysis(prices, cfg)
+    res["demo"] = bool(args.demo)
     out_dir = ROOT / "reports" / (res["as_of"] + ("-demo" if args.demo else ""))
     path = write_report(res, out_dir)
 

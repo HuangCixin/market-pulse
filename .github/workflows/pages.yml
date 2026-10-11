@@ -1,8 +1,13 @@
-# Publishes a live demo (synthetic data) to GitHub Pages on every push to main.
+# Builds Market Pulse with real market data and publishes it to GitHub Pages.
+#   - every weekday after the US close (22:30 UTC = 00:30 Paris / 06:30 Beijing)
+#   - on every push to main, and on demand (Actions → Daily update → Run workflow)
+# The site has:  index.html (latest real data), demo.html (synthetic data), summary.json
 # One-time setup: repository Settings → Pages → Source: "GitHub Actions".
-name: Live demo
+name: Daily update
 
 on:
+  schedule:
+    - cron: "30 22 * * 1-5"
   push:
     branches: [main]
   workflow_dispatch:
@@ -19,6 +24,7 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -29,11 +35,21 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: pip install -r requirements.txt
-      - name: Build the demo page
+
+      # If the download fails the job stops here and yesterday's page stays online.
+      - name: Build today's page (real data)
+        run: |
+          python run_daily.py
+          latest=$(ls -d reports/*/ | grep -v -- '-demo/' | sort | tail -1)
+          mkdir -p site
+          cp "${latest}report.html" site/index.html
+          cp "${latest}summary.json" site/summary.json
+
+      - name: Build the demo page (synthetic data)
         run: |
           python run_daily.py --demo
-          mkdir -p site
-          cp reports/*-demo/report.html site/index.html
+          cp reports/*-demo/report.html site/demo.html
+
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

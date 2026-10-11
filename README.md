@@ -10,7 +10,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
 
-[**▶ Live demo**](https://HuangCixin.github.io/market-pulse/) (synthetic data)
+[**▶ Live page**](https://HuangCixin.github.io/market-pulse/) (real data, updated every weekday) · [Demo](https://HuangCixin.github.io/market-pulse/demo.html) (synthetic data)
 
 ![Market terrain](docs/images/terrain-en.png)
 
@@ -93,6 +93,14 @@ performance.csv   the performance table
 market group has a complete day.
 
 ### Run it every day automatically
+
+**On GitHub (already set up):** the [`Daily update`](.github/workflows/pages.yml) workflow rebuilds the page
+with real data every weekday at 22:30 UTC (00:30 Paris, 06:30 Beijing) and publishes it to GitHub Pages.
+If a download fails, the previous day's page stays online. You can also start it by hand under
+**Actions → Daily update → Run workflow**. GitHub pauses scheduled workflows in public repositories after
+60 days without any commits; one click on **Enable workflow** in the Actions tab turns it back on.
+
+**On your own computer:**
 
 macOS / Linux (`crontab -e`, weekdays at 23:00):
 

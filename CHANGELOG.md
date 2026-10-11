@@ -4,6 +4,13 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [1.1.0] - 2026-10-11
+
+### Added
+- **Daily update**: the GitHub Pages site is rebuilt with real market data every weekday after the US close.
+  `index.html` shows real data, `demo.html` the synthetic demo, and `summary.json` is published alongside.
+- A "Synthetic demo data / 模拟演示数据" badge on pages built with `--demo`.
+
 ## [1.0.0] - 2026-10-10
 
 ### Added

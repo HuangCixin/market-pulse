@@ -62,5 +62,7 @@ spillover. Present data, not investment advice.
 - Python 3.10+, pandas, numpy, yfinance, pyyaml. No plotting libraries; charts are drawn in template.html.
 - The page must stay a single self-contained file (no CDN), readable in light and dark mode, and usable on a phone.
 - Test changes with `pytest` and `python run_daily.py --demo --open` before running on live data.
-- CI (.github/workflows/ci.yml) runs the tests; pages.yml publishes the demo page to GitHub Pages.
+- CI (.github/workflows/ci.yml) runs the tests. pages.yml ("Daily update") runs every weekday at 22:30 UTC,
+  builds the page with real data and publishes index.html (real), demo.html (synthetic) and summary.json to GitHub Pages.
+  Pages built with --demo show a "Synthetic demo data / 模拟演示数据" badge (`D.demo`).
 - Full methodology: docs/METHODOLOGY.md. Update it (both languages) when changing calculations.
