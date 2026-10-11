@@ -18,14 +18,15 @@ performance, correlation shifts, US→China lead/lag), `performance.csv`.
 ## Layout
 - `config.yaml` — markets (Yahoo Finance tickers), groups, windows, key pairs. Add/remove markets here, not in code.
 - `market/fetch.py` — yfinance download + CSV cache; `demo_prices()` builds synthetic data.
-- `market/analyze.py` — all numbers: moves, σ, 3D layout (MDS), correlations, regime. Returns a JSON-able dict.
+- `market/analyze.py` — all numbers: moves, σ, zone layout, correlations, regime. Returns a JSON-able dict.
 - `market/report.py` — headlines, embeds the dict into the template, writes summary files.
 - `market/template.html` — the page: vanilla JS + canvas/SVG. Data arrives as `const D = {...}`.
 - `run_daily.py` — CLI.
 
 ## Page sections (template.html)
-1. **Market terrain (3D canvas)**: a filled, shaded surface. Each market sits at x/y from MDS of the
-   long-window correlation (markets that move together are close). Height AND color = move in σ
+1. **Market terrain (3D canvas)**: a filled, shaded surface. Markets sit in fixed, colored zones by asset class
+   (`zones:` in config.yaml: metals, FX, China, energy, US stocks & Treasuries, crypto; 3 per row), each with a
+   colored ring, colored dots and a legend entry. Labels show name + σ; % move is in the tooltip. Height AND color = move in σ
    (diverging scale centred at 0: teal up, light neutral near 0, orange/red down; swapped in the
    red-up mode; color bar on the right, full color beyond ±3σ). The surface is a kernel blend that
    passes through each market's exact σ and eases to 0 between markets. Dots mark markets; labels

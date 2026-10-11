@@ -66,14 +66,23 @@ def test_correlations_use_weekdays_only():
     assert mv.iloc[0] == pytest.approx(np.log(110 / 100))
 
 
-# ---------- correlation layout
-def test_mds_places_correlated_markets_close():
-    names = ["A", "B", "C"]
-    corr = pd.DataFrame([[1, 0.95, -0.8], [0.95, 1, -0.75], [-0.8, -0.75, 1]], index=names, columns=names)
-    pos = analyze.mds_positions(corr)
+# ---------- terrain layout
+def test_zone_layout_keeps_each_zone_together(cfg):
+    pos, zones = analyze.zone_layout(cfg["assets"], cfg["zones"])
+    assert set(pos) == {a["name"] for a in cfg["assets"]}          # every market placed exactly once
     d = lambda a, b: np.hypot(pos[a][0] - pos[b][0], pos[a][1] - pos[b][1])
-    assert d("A", "B") < d("A", "C")
-    assert all(abs(v) <= 1.0 + 1e-9 for xy in pos.values() for v in xy)
+    gold_silver = d("Gold", "Silver")
+    assert gold_silver < d("Gold", "Bitcoin") and gold_silver < d("Gold", "Nasdaq")
+    assert d("Shanghai Comp", "Hang Seng") < d("Shanghai Comp", "Gold")
+    assert d("Nasdaq", "US 10Y Yield") < d("Nasdaq", "Bitcoin")
+    assert all(z["color"].startswith("#") for z in zones)
+
+
+def test_unlisted_markets_get_a_zone_from_their_group():
+    assets = [{"name": "A", "group": "G1"}, {"name": "B", "group": "G2"}, {"name": "C", "group": "G2"}]
+    pos, zones = analyze.zone_layout(assets, [{"name": "Z", "members": ["A"]}])
+    assert [z["name"] for z in zones] == ["Z", "G2"] and zones[1]["members"] == ["B", "C"]
+    assert set(pos) == {"A", "B", "C"}
 
 
 def test_leadlag_detects_next_day_spillover():

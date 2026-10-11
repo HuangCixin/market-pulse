@@ -69,7 +69,7 @@ header{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:flex-end;justify-co
 .cbar-ticks{position:relative;width:74px}
 .cbar-ticks span{position:absolute;left:0;transform:translateY(-50%);font-size:11px;color:var(--ink-2);white-space:nowrap;font-variant-numeric:tabular-nums}
 .cbar-note{font-size:10.5px;color:var(--ink-3);max-width:110px}
-@media (max-width:640px){.cbar-body{height:120px}.stage .legend .key{display:none}}
+@media (max-width:640px){.cbar-body{height:96px}.cbar-note{display:none}.stage .legend .key{display:none}}
 .dot{width:10px;height:10px;border-radius:50%;display:inline-block}
 .stage .hint{position:absolute;left:12px;top:10px;font-size:12px;color:var(--ink-3);pointer-events:none;text-align:right}
 .timeline{display:flex;align-items:center;gap:12px;padding:10px 12px;border-top:1px solid var(--line)}
@@ -206,10 +206,10 @@ const I18N = {
  en:{title:"Market Pulse",period:"Period",day:"Day",week:"Week",month:"Month",colors:"Colors",west:"Green = up",cnColors:"Red = up 红涨",
   theme:"Theme",auto:"Auto",light:"Light",dark:"Dark",hTerrain:"Market terrain",
   noteTerrain:`A terrain built from every market's move. <b>Height and color</b> = how strongly it moved in σ
-   (its move divided by its usual move, so gold, FX and crypto are comparable): peaks went up, valleys went down. Markets that
-   usually move together sit <b>close to each other</b>, so a whole region rising or sinking shows money moving between groups.
-   Dots mark each market; labels show σ and the actual % move. The surface between dots is a smooth blend for readability;
-   only the dots are data. Drag to rotate, scroll to zoom, hover a dot for details.`,
+   (its move divided by its usual move, so gold, FX and crypto are comparable): peaks went up, valleys went down.
+   Markets are grouped into <b>colored zones</b> by asset class (metals, FX, China, energy, US, crypto), so you can see
+   at a glance which area rose or sank. Labels show σ; hover a dot for the actual % move. The surface between dots is a
+   smooth blend for readability; only the dots are data. Drag to rotate, scroll to zoom.`,
   hint:"drag · scroll · hover",links:"Links",allLabels:"All labels",autoRotate:"Auto-rotate",
   hFlow:"Where the money moved",noteFlow:`Same date and period as the terrain. Bars show each market's move in σ; the number is the actual move
    (% or bp for yields). Markets are sorted strongest to weakest inside each group.`,
@@ -233,9 +233,9 @@ const I18N = {
  zh:{title:"市场脉搏 <span style=\"font-weight:400;color:var(--ink-3);font-size:15px\">Market Pulse</span>",period:"周期",day:"日",week:"周",month:"月",colors:"配色",west:"绿涨红跌",cnColors:"红涨绿跌",
   theme:"主题",auto:"自动",light:"浅色",dark:"深色",hTerrain:"市场地形图",
   noteTerrain:`由所有市场的涨跌构成的地形。<b>高度和颜色</b> = 波动强度（σ，即本次涨跌除以该市场的正常波动，
-   因此黄金、外汇和加密货币可以直接比较）：山峰表示上涨，山谷表示下跌。通常同涨同跌的市场<b>彼此靠近</b>，
-   所以整片区域上升或下沉，代表资金在不同市场之间流动。圆点代表各个市场，标签显示 σ 和实际涨跌幅。
-   圆点之间的曲面只是为了便于阅读而做的平滑过渡，只有圆点是真实数据。拖动旋转，滚轮缩放，悬停圆点查看详情。`,
+   因此黄金、外汇和加密货币可以直接比较）：山峰表示上涨，山谷表示下跌。市场按资产类别分成<b>彩色区域</b>
+   （金属、外汇、中国股市、能源、美股与美债、加密货币），一眼就能看出哪个板块在涨、哪个在跌。
+   标签显示 σ，悬停圆点可查看实际涨跌幅。圆点之间的曲面只是为了便于阅读而做的平滑过渡，只有圆点是真实数据。拖动旋转，滚轮缩放。`,
   hint:"拖动 · 缩放 · 悬停",links:"关联线",allLabels:"全部标签",autoRotate:"自动旋转",
   hFlow:"资金流向",noteFlow:`与地形图使用相同的日期和周期。条形表示各市场的 σ 波动，数字为实际涨跌幅
    （收益率用基点 bp）。每组内按从强到弱排序。`,
@@ -315,11 +315,15 @@ function renderHeader(){
 
 // ---------- 3D terrain (market float)
 const cv = $("#float"), ctx = cv.getContext("2d");
-const cam = {yaw:-0.6, pitch:0.55, zoom:1};
+const cam = {yaw:-0.45, pitch:0.78, zoom:1};
 const ZS = 0.34, ZMAX = 4;          // world height per sigma, clamp
-const E = 1.2, N = 56;              // half-extent of the terrain, grid resolution
-const KS = 0.19, K0 = 1.2;          // K0: pull toward sea level away from markets          // kernel width, pull toward sea level away from markets
+const E = 1.55, N = 64;              // half-extent of the terrain, grid resolution
+const KS = 0.19, K0 = 1.2;          // kernel width; K0 pulls areas away from markets back to sea level
 let hoverName = null, pins = [];
+const ZONES = D.zones || [];
+const ZONE_OF = Object.fromEntries(ZONES.flatMap(z=>z.members.map(m=>[m,z])));
+const ZN = z => LANG==="zh" ? (z.name_zh||z.name) : z.name;
+function zoneColor(z){ if(!z) return css("--ink"); return isDark() ? mix(z.color,"#ffffff",0.22) : z.color; }
 const links = (()=>{ const n=D.corr.names, m=D.corr.short, out=[];
   for(let i=0;i<n.length;i++) for(let j=i+1;j<n.length;j++){ const v=m[i][j]; if(v!=null && Math.abs(v)>=0.6) out.push([n[i],n[j],v]); }
   return out; })();
@@ -344,8 +348,9 @@ function project(x,y,z,W,H){
   const cy=Math.cos(cam.yaw), sy=Math.sin(cam.yaw), cp=Math.cos(cam.pitch), sp=Math.sin(cam.pitch);
   const X = x*cy - y*sy, Y = x*sy + y*cy;
   const Zs = z*cp - Y*sp, depth = z*sp + Y*cp;
-  const f = Math.min(W,H)*0.46*cam.zoom, dist = 4.2, s = dist/(dist - depth*0.9);
-  return {sx: W*0.45 + X*f*s, sy: H*0.56 - Zs*f*s, s, depth};
+  const narrow = W < 640;                        // phones: smaller terrain, lower, leaving room for the color bar
+  const f = (narrow ? Math.min(W*0.2, H*0.33) : Math.min(W,H)*0.37)*cam.zoom, dist = 4.2, s = dist/(dist - depth*0.9);
+  return {sx: W*(narrow?0.47:0.44) + X*f*s, sy: H*(narrow?0.64:0.53) - Zs*f*s, s, depth};
 }
 function resize(){ const r=cv.getBoundingClientRect(), dpr=devicePixelRatio||1;
   cv.width=r.width*dpr; cv.height=r.height*dpr; ctx.setTransform(dpr,0,0,dpr,0,0); drawFloat(); }
@@ -379,11 +384,13 @@ function drawFloat(){
   for(let r=0;r<=N;r++) for(let c=0;c<=N;c++){ const k=r*(N+1)+c; V[k]=project(-E+step*c,-E+step*r,g[k]*ZS,W,H); }
   // sigma pole at the back corner
   const corners=[[-E,-E],[E,-E],[E,E],[-E,E]];
-  const pole=[...corners].sort((a,b)=>project(a[0],a[1],0,W,H).depth-project(b[0],b[1],0,W,H).depth)[0];
-  const p0=project(pole[0],pole[1],-3*ZS,W,H), p1=project(pole[0],pole[1],3*ZS,W,H);
+  // sigma scale on the left-most of the two back corners, away from the zones
+  const pole=[...corners].sort((a,b)=>project(a[0],a[1],0,W,H).depth-project(b[0],b[1],0,W,H).depth).slice(0,2)
+    .sort((a,b)=>project(a[0],a[1],0,W,H).sx-project(b[0],b[1],0,W,H).sx)[0];
+  const p0=project(pole[0],pole[1],-2*ZS,W,H), p1=project(pole[0],pole[1],2*ZS,W,H);
   const drawPole=()=>{ ctx.globalAlpha=.7; ctx.strokeStyle=ink3; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(p0.sx,p0.sy); ctx.lineTo(p1.sx,p1.sy); ctx.stroke();
     ctx.font="11px system-ui,sans-serif"; ctx.textAlign="right"; ctx.lineJoin="round";
-    for(const z of [-3,-2,-1,0,1,2,3]){ const p=project(pole[0],pole[1],z*ZS,W,H);
+    for(const z of [-2,-1,0,1,2]){ const p=project(pole[0],pole[1],z*ZS,W,H);
       ctx.strokeStyle=ink3; ctx.beginPath(); ctx.moveTo(p.sx-3,p.sy); ctx.lineTo(p.sx+3,p.sy); ctx.stroke();
       const t=(z>0?"+":z<0?"−":"")+Math.abs(z)+"σ"; ctx.strokeStyle=dark?"rgba(26,26,25,.85)":"rgba(252,252,251,.9)"; ctx.lineWidth=3;
       ctx.strokeText(t,p.sx-6,p.sy+4); ctx.fillStyle=ink2; ctx.fillText(t,p.sx-6,p.sy+4); ctx.lineWidth=1; } ctx.globalAlpha=1; };
@@ -411,6 +418,16 @@ function drawFloat(){
     if(c===N-1){ ctx.beginPath(); ctx.moveTo(V[b].sx,V[b].sy); ctx.lineTo(V[e].sx,V[e].sy); ctx.stroke(); }
   }
   drawPole();
+  // zone outlines follow the terrain surface; zone names sit at the back of each ring
+  const zoneTags=[];
+  for(const zn of ZONES){
+    const R=zn.radius+0.21, col=zoneColor(zn), pts=[];
+    for(let k=0;k<=72;k++){ const a=k/72*Math.PI*2, x=zn.center[0]+R*Math.cos(a), y=zn.center[1]+R*Math.sin(a);
+      pts.push(project(x,y,zAt(g,x,y)*ZS,W,H)); }
+    ctx.strokeStyle=col; ctx.lineWidth=2.2; ctx.globalAlpha=.95; ctx.beginPath();
+    pts.forEach((p,k)=>k?ctx.lineTo(p.sx,p.sy):ctx.moveTo(p.sx,p.sy)); ctx.stroke(); ctx.globalAlpha=1;
+    const top=pts.reduce((m,p)=>p.sy<m.sy?p:m,pts[0]); zoneTags.push({zn,col,x:top.sx,y:top.sy});
+  }
   // market pins sit on the terrain; text uses ink colors, never the scale color
   pins = assets.filter(a=>pos[a.name]).map(a=>{ const [x,y]=pos[a.name], z=P[a.name].z[i];
     return {a, z, v:P[a.name].v[i], at:project(x,y,zAt(g,x,y)*ZS,W,H)}; });
@@ -423,24 +440,33 @@ function drawFloat(){
   pins.sort((p,q)=>p.at.depth-q.at.depth);
   for(const p of pins){ const hov=p.a.name===hoverName, r=(hov?5:3.5)*p.at.s;
     ctx.beginPath(); ctx.arc(p.at.sx,p.at.sy,r,0,7);
-    if(p.z==null){ ctx.strokeStyle=ink; ctx.setLineDash([2,2]); ctx.lineWidth=1.3; ctx.stroke(); ctx.setLineDash([]); }
-    else { ctx.fillStyle=dark?"#f0efec":"#0b0b0b"; ctx.fill(); ctx.strokeStyle=dark?"#1a1a19":"#fcfcfb"; ctx.lineWidth=1.5; ctx.stroke(); } }
+    const zc=zoneColor(ZONE_OF[p.a.name]);
+    if(p.z==null){ ctx.strokeStyle=zc; ctx.setLineDash([2,2]); ctx.lineWidth=1.6; ctx.stroke(); ctx.setLineDash([]); }
+    else { ctx.fillStyle=zc; ctx.fill(); ctx.strokeStyle=dark?"#1a1a19":"#ffffff"; ctx.lineWidth=1.6; ctx.stroke(); } }
   // labels with a halo so they stay readable on any terrain color
   const all=$("#tLabels").checked, placed=[];
+  ctx.lineJoin="round"; ctx.textAlign="left";
+  for(const zt of zoneTags){
+    ctx.font="700 12.5px system-ui,sans-serif"; const label=ZN(zt.zn), w=ctx.measureText(label).width+16;
+    const box={x:zt.x-w/2,y:zt.y-24,w,h:18}; placed.push(box);
+    ctx.fillStyle=dark?"rgba(26,26,25,.82)":"rgba(255,255,255,.88)"; ctx.beginPath(); ctx.roundRect(box.x-4,box.y-1,box.w+8,box.h+2,9); ctx.fill();
+    ctx.fillStyle=zt.col; ctx.beginPath(); ctx.arc(box.x+5,box.y+9,4.5,0,7); ctx.fill();
+    ctx.fillStyle=ink; ctx.fillText(label,box.x+14,box.y+13.5);
+  }
   const order=[...pins].sort((p,q)=>(q.a.name===hoverName)-(p.a.name===hoverName)||Math.abs(q.z||0)-Math.abs(p.z||0));
   ctx.textAlign="left"; ctx.lineJoin="round";
   for(const p of order){
     const hov=p.a.name===hoverName; if(!all && Math.abs(p.z||0)<1.2 && !hov) continue;
-    const name=NM(p.a.name), sub=p.z==null?t("closed"):`${fmtZ(p.z)} · ${fmtMove(p.v,p.a.name)}`;
-    ctx.font="600 12px system-ui,sans-serif"; const w1=ctx.measureText(name).width;
-    ctx.font="11px system-ui,sans-serif"; const w=Math.max(w1, ctx.measureText(sub).width);
+    const name=NM(p.a.name), sub=p.z==null?t("closed"):fmtZ(p.z);
+    ctx.font="600 12px system-ui,sans-serif"; const w1=ctx.measureText(name+" ").width;
+    ctx.font="11px system-ui,sans-serif"; const w=w1+ctx.measureText(sub).width;
     const hit=bx=>placed.some(b=>!(bx.x>b.x+b.w||bx.x+bx.w<b.x||bx.y>b.y+b.h||bx.y+bx.h<b.y));
-    const cands=[{x:p.at.sx+7,y:p.at.sy-25},{x:p.at.sx-7-w,y:p.at.sy-25},{x:p.at.sx-w/2,y:p.at.sy-36},{x:p.at.sx-w/2,y:p.at.sy+6}].map(c=>({...c,w,h:27}));
+    const cands=[{x:p.at.sx+7,y:p.at.sy-8},{x:p.at.sx-7-w,y:p.at.sy-8},{x:p.at.sx-w/2,y:p.at.sy-22},{x:p.at.sx-w/2,y:p.at.sy+6}].map(c=>({...c,w,h:15}));
     const box=hov?cands[0]:cands.find(c=>!hit(c)); if(!box) continue;
     placed.push(box);
     ctx.strokeStyle=dark?"rgba(26,26,25,.85)":"rgba(252,252,251,.9)"; ctx.lineWidth=3.5;
     ctx.font="600 12px system-ui,sans-serif"; ctx.strokeText(name,box.x,box.y+12); ctx.fillStyle=ink; ctx.fillText(name,box.x,box.y+12);
-    ctx.font="11px system-ui,sans-serif"; ctx.strokeText(sub,box.x,box.y+25); ctx.fillStyle=ink2; ctx.fillText(sub,box.x,box.y+25);
+    ctx.font="11px system-ui,sans-serif"; ctx.strokeText(sub,box.x+w1,box.y+12); ctx.fillStyle=ink2; ctx.fillText(sub,box.x+w1,box.y+12);
   }
 }
 function floatHover(e){
@@ -450,7 +476,8 @@ function floatHover(e){
   if(name!==hoverName){ hoverName=name; drawFloat(); }
   if(best){ const a=best.a, pf=D.performance[a.name]||{};
     const linked=links.filter(l=>l[0]===a.name||l[1]===a.name).map(l=>`${NM(l[0]===a.name?l[1]:l[0])} ${l[2]>0?"+":"−"}${Math.abs(l[2]).toFixed(2)}`);
-    showTip(`<div class="t">${NM(a.name)} <span style="color:var(--ink-3);font-weight:400">${GN(a.group)}</span></div>
+    const zn=ZONE_OF[a.name];
+    showTip(`<div class="t">${NM(a.name)} <span style="color:var(--ink-3);font-weight:400">${zn?`<i class="dot" style="background:${zoneColor(zn)};width:8px;height:8px"></i> ${ZN(zn)}`:GN(a.group)}</span></div>
       <div class="r">${t("heightS")}<b>${fmtZ(best.z)}</b></div>
       <div class="r">${t("move")} (${PERIOD_WORD[state.period]})<b>${best.z==null?t("closed"):fmtMove(best.v,a.name)}</b></div>
       <div class="r">${t("lastPrice")}<b>${fmtNum(pf.last)}</b></div>
@@ -474,8 +501,8 @@ function renderFloatLegend(){
       <div class="cbar-body"><div class="cbar-grad" style="background:linear-gradient(to bottom,${stops.join(",")})"></div>
       <div class="cbar-ticks">${[3,2,1,0,-1,-2,-3].map(z=>`<span style="top:${(3-z)/6*100}%">${z>0?"+":z<0?"−":""}${Math.abs(z)}${z===3?"σ ↑ "+t("up"):z===-3?"σ ↓ "+t("down"):"σ"}</span>`).join("")}</div></div>
       <div class="cbar-note">${t("cbarNote")}</div></div>
-    <div class="key"><span><i class="dot" style="background:var(--ink)"></i>${t("kMarket")}</span>
-      <span><i class="dot" style="border:1.5px dashed var(--ink)"></i>${t("kClosed")}</span>
+    <div class="key">${ZONES.map(z=>`<span><i class="dot" style="background:${zoneColor(z)}"></i>${ZN(z)}</span>`).join("")}
+      <span><i class="dot" style="border:1.5px dashed var(--ink-2)"></i>${t("kClosed")}</span>
       <span><svg width="20" height="6"><line x1="0" y1="3" x2="20" y2="3" stroke="var(--ink-2)" stroke-width="1.5"/></svg>${t("kTogether")}</span>
       <span><svg width="20" height="6"><line x1="0" y1="3" x2="20" y2="3" stroke="var(--ink-2)" stroke-width="1.5" stroke-dasharray="5 4"/></svg>${t("kOpposite")}</span></div>`;
 }
@@ -643,6 +670,7 @@ seg("#themeSeg","theme",()=>{ if(state.theme==="auto") delete document.documentE
   try{localStorage.setItem("mp-theme",state.theme);}catch(e){} renderAll(); });
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change",renderAll);
 let rt=null; addEventListener("resize",()=>{ resize(); clearTimeout(rt); rt=setTimeout(()=>{renderTrends(); renderRelations();},150); });
+if(innerWidth<640) $("#tLabels").checked=false;   // phones: zone names + big movers only
 setIdx(state.idx); renderAll(); resize(); spin();
 </script>
 </body>

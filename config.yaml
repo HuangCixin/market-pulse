@@ -43,6 +43,16 @@ assets:
   - {name: Ethereum,      ticker: "ETH-USD",   group: Crypto,      region: Global, kind: price, name_zh: "以太坊"}
   - {name: Solana,        ticker: "SOL-USD",   group: Crypto,      region: Global, kind: price, name_zh: "Solana"}
 
+# Terrain zones: markets are placed in fixed, colored areas by asset class,
+# laid out left to right, 3 per row. Markets not listed here get a zone named after their group.
+zones:
+  - {name: Metals, name_zh: "金属",       color: "#d9a21b", members: [Gold, Silver, Copper]}
+  - {name: FX,     name_zh: "外汇",       color: "#1f9e5a", members: [Dollar Index, EUR/USD, USD/CNY, USD/JPY]}
+  - {name: China,  name_zh: "中国股市",   color: "#d6409f", members: [Shanghai Comp, CSI 300, Shenzhen Comp, Hang Seng]}
+  - {name: Energy, name_zh: "能源",       color: "#9a5c1a", members: [WTI Oil, Brent Oil]}
+  - {name: US,     name_zh: "美股与美债", color: "#2f6fdf", members: [S&P 500, Nasdaq, Dow Jones, US 10Y Yield, VIX]}
+  - {name: Crypto, name_zh: "加密货币",   color: "#9b51e0", members: [Bitcoin, Ethereum, Solana]}
+
 # Pairs to plot as rolling correlations (use the "name" values above).
 key_pairs:
   - [Gold, Dollar Index]

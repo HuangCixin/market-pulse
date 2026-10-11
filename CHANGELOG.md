@@ -11,6 +11,12 @@ All notable changes to this project are documented here. The format follows
   `index.html` shows real data, `demo.html` the synthetic demo, and `summary.json` is published alongside.
 - A "Synthetic demo data / 模拟演示数据" badge on pages built with `--demo`.
 
+### Changed
+- **Terrain layout by asset class**: markets now sit in fixed, colored zones (metals, FX, China stocks, energy,
+  US stocks & Treasuries, crypto) instead of a correlation-based layout. Each zone has a colored ring, colored
+  dots and a legend entry. Zones are configurable under `zones:` in `config.yaml`.
+- Terrain labels are one line (name + σ); the % move is in the tooltip.
+
 ## [1.0.0] - 2026-10-10
 
 ### Added

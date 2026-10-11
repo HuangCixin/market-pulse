@@ -4,6 +4,8 @@ Everything here returns plain numbers; market/report.py turns them into the page
 """
 from __future__ import annotations
 
+import math
+
 import numpy as np
 import pandas as pd
 
@@ -81,43 +83,50 @@ def us_to_china_leadlag(moves: pd.DataFrame, regions: dict[str, str], window: in
     return out
 
 
-# ---------------------------------------------------------------- 3D float layout
-def mds_positions(corr: pd.DataFrame) -> dict[str, tuple[float, float]]:
-    """Place assets on a plane so assets that move together sit close together.
+# ---------------------------------------------------------------- terrain layout
+FALLBACK_COLORS = ["#6b7280", "#0e7490", "#b45309", "#be123c"]
 
-    Classical multidimensional scaling on distance d = sqrt(2 * (1 - corr)).
+
+def zone_layout(assets: list[dict], zones_cfg: list[dict] | None,
+                cols: int = 3, dx: float = 0.98, dy: float = 1.08) -> tuple[dict, list[dict]]:
+    """Place markets in fixed zones by asset class, so related markets always sit together.
+
+    Zones fill a grid left to right (`cols` per row). Inside a zone the markets sit on a
+    small circle. Returns ({market: (x, y)}, [zone dicts for the page]).
     """
-    names = list(corr.columns)
-    c = corr.fillna(0).values.copy()
-    np.fill_diagonal(c, 1)
-    d2 = 2 * (1 - c)
-    n = len(names)
-    j = np.eye(n) - np.ones((n, n)) / n
-    b = -0.5 * j @ d2 @ j
-    vals, vecs = np.linalg.eigh(b)
-    order = np.argsort(vals)[::-1][:2]
-    xy = vecs[:, order] * np.sqrt(np.maximum(vals[order], 1e-9))
-    xy -= xy.mean(axis=0)
-    xy /= np.abs(xy).max() or 1
-    # outliers stretch the map and crowd the centre: compress radii (keeps direction and order)
-    r = np.hypot(xy[:, 0], xy[:, 1])
-    xy = xy * (np.where(r > 1e-9, r ** 0.5 / np.maximum(r, 1e-9), 1))[:, None]
-    # gentle repulsion so tightly linked markets stay close but never overlap
-    dmin = 0.3
-    for _ in range(300):
-        moved = False
-        for i in range(n):
-            for k in range(i + 1, n):
-                d = xy[i] - xy[k]
-                dist = float(np.hypot(*d))
-                if dist < dmin:
-                    push = (d / dist if dist > 1e-6 else np.array([1.0, 0.0])) * (dmin - dist) / 2
-                    xy[i] += push; xy[k] -= push; moved = True
-        if not moved:
-            break
-    xy -= xy.mean(axis=0)
-    xy /= np.abs(xy).max() or 1
-    return {nm: (round(float(x), 4), round(float(y), 4)) for nm, (x, y) in zip(names, xy)}
+    names = [a["name"] for a in assets]
+    zones, used = [], set()
+    for z in zones_cfg or []:
+        members = [m for m in z.get("members", []) if m in names and m not in used]
+        if members:
+            used.update(members)
+            zones.append({"name": z["name"], "name_zh": z.get("name_zh", z["name"]),
+                          "color": z.get("color"), "members": members})
+    for a in assets:                                   # anything not assigned: a zone per group
+        if a["name"] in used:
+            continue
+        grp = a.get("group", "Other")
+        z = next((z for z in zones if z["name"] == grp), None)
+        if z is None:
+            z = {"name": grp, "name_zh": grp, "color": None, "members": []}
+            zones.append(z)
+        z["members"].append(a["name"]); used.add(a["name"])
+    for i, z in enumerate(zones):
+        z["color"] = z["color"] or FALLBACK_COLORS[i % len(FALLBACK_COLORS)]
+
+    rows = (len(zones) + cols - 1) // cols
+    positions = {}
+    for i, z in enumerate(zones):
+        r, c = divmod(i, cols)
+        in_row = min(cols, len(zones) - r * cols)
+        cx, cy = (c - (in_row - 1) / 2) * dx, (r - (rows - 1) / 2) * dy
+        k = len(z["members"])
+        rad = 0.0 if k == 1 else 0.13 + 0.025 * k
+        for j, m in enumerate(z["members"]):
+            ang = -math.pi / 2 + 2 * math.pi * j / max(k, 1)
+            positions[m] = (round(cx + rad * math.cos(ang), 4), round(cy + rad * math.sin(ang), 4))
+        z["center"], z["radius"] = [round(cx, 4), round(cy, 4)], round(rad, 4)
+    return positions, zones
 
 
 def float_frames(prices: pd.DataFrame, kinds: dict[str, str], n_dates: int = 120) -> dict:
@@ -231,6 +240,7 @@ def run_analysis(prices: pd.DataFrame, cfg: dict) -> dict:
     w_roll = cfg.get("rolling_window", 60)
     prices = prices[[a["name"] for a in assets]]
 
+    positions, zones = zone_layout(assets, cfg.get("zones"))
     cm = corr_moves(prices, kinds)
     corr_s, corr_l = correlation(cm, w_short), correlation(cm, w_long)
     frames = float_frames(prices, kinds, cfg.get("float_days", 120))
@@ -253,7 +263,7 @@ def run_analysis(prices: pd.DataFrame, cfg: dict) -> dict:
         "data_end": frames["dates"][-1],
         "assets": [{"name": a["name"], "name_zh": a.get("name_zh", a["name"]), "group": groups[a["name"]],
                     "region": regions[a["name"]], "kind": kinds[a["name"]], "ticker": a["ticker"]} for a in assets],
-        "positions": mds_positions(corr_l),
+        "positions": positions, "zones": zones,
         "float": frames,
         "performance": performance(prices, kinds),
         "regime": {p: regime(frames, groups, p) for p in PERIODS},

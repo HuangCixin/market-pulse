@@ -22,7 +22,7 @@ shows, at a glance:
 
 - **What moved, and how unusual it was.** Every move is measured in σ (standard deviations of that
   market's normal daily move), so a 0.3% currency move and a 4% Bitcoin move are directly comparable.
-- **Where the money went.** Markets that usually move together sit next to each other on the terrain,
+- **Where the money went.** Markets are grouped into colored zones by asset class (metals, FX, China, energy, US, crypto),
   so a whole region rising or sinking shows money rotating between asset classes.
 - **How markets are connected.** Correlations, relationships that recently changed, and next-day
   spillover from Wall Street to Shanghai and Hong Kong.
@@ -132,7 +132,7 @@ The key ideas, in short (full detail in [docs/METHODOLOGY.md](docs/METHODOLOGY.m
 - **Respect calendars.** Holidays are never filled with fake zero-return days. For correlations every
   market is sampled on weekdays, so crypto's Monday move covers Friday → Monday just like stocks.
 - **Time zones matter.** Asia closes before New York opens, so the US → China link is measured with a one-day lag.
-- **Layout from correlation.** Market positions come from multidimensional scaling of the 250-day correlation matrix.
+- **Zones by asset class.** Markets sit in fixed, colored zones defined in `config.yaml`, so each one is always in the same place.
 
 > **Note on the terrain:** the dots are the data. The surface between dots is a smooth blend added so the
 > picture reads as a landscape. It passes through each market's exact value and eases to zero between them.

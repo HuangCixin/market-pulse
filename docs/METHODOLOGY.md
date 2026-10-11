@@ -60,17 +60,16 @@ each Chinese trading day, over the last 60 days.
 
 ## 5. The 3D layout
 
-Market positions on the terrain come from **classical multidimensional scaling (MDS)** of the 250-day
-correlation matrix:
+Markets are placed in fixed **zones by asset class**, defined under `zones:` in `config.yaml`:
+metals, FX, China stocks, energy, US stocks & Treasuries, and crypto. Each zone has its own color,
+used for its ring on the terrain, its market dots and its legend entry.
 
-1. Distance between two markets: `d = √(2 × (1 − ρ))`. Markets with ρ = 1 are at distance 0, and
-   markets with ρ = −1 are at the maximum distance of 2.
-2. MDS finds the 2D positions whose distances best match `d`.
-3. Radii are compressed (`r → √r`) so that a few outliers do not squeeze everything else into the
-   centre. A light repulsion step then keeps markets from overlapping.
+- Zones fill a grid of three per row, left to right, in the order listed in the config.
+- Inside a zone, markets sit on a small circle around the zone centre.
+- A market that is not listed in any zone gets a zone named after its `group`.
 
-Markets that move together end up close, so related markets form regions: US stocks, China stocks,
-the dollar complex, and so on.
+The layout is the same every day, so a market is always found in the same place. How markets relate
+to each other is shown by the relationship lines (Links), the correlation charts and the US → China table.
 
 ## 6. The terrain surface
 
